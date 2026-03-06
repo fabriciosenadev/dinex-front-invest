@@ -5,12 +5,8 @@ export type PortfolioPosition = {
   currency: string;
 };
 
-export type OperationResult<T> = {
-  data: T;
+export type ErrorResponse = {
   errors: string[];
-  succeeded: boolean;
-  isNotFound: boolean;
-  internalServerError: boolean;
 };
 
 export type RegisterMovementPayload = {
@@ -20,4 +16,30 @@ export type RegisterMovementPayload = {
   unitPrice: number;
   currency: string;
   occurredAtUtc?: string;
+};
+
+export type AuthenticateUserPayload = {
+  userId: string;
+  fullName: string;
+  email: string;
+  accessToken: string;
+  expiresAtUtc: string;
+  refreshToken: string;
+  refreshTokenExpiresAtUtc: string;
+};
+
+export type CurrentUserPayload = {
+  userId: string;
+  fullName: string;
+  email: string;
+  userStatus: string;
+  createdAtUtc: string;
+  updatedAtUtc?: string | null;
+};
+
+export type StoredSession = {
+  accessToken: string;
+  refreshToken: string;
+  accessTokenExpiresAtUtc: string;
+  refreshTokenExpiresAtUtc: string;
 };
