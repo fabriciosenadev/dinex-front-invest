@@ -43,3 +43,28 @@ export type StoredSession = {
   accessTokenExpiresAtUtc: string;
   refreshTokenExpiresAtUtc: string;
 };
+
+export type StatementEntryType =
+  | "Buy"
+  | "Sell"
+  | "Income"
+  | "Fee"
+  | "Tax"
+  | "Adjustment"
+  | "CorporateAction";
+
+export type StatementEntryPayload = {
+  id: string;
+  type: StatementEntryType;
+  description: string;
+  assetSymbol?: string | null;
+  quantity?: number | null;
+  unitPriceAmount?: number | null;
+  grossAmount: number;
+  netAmount: number;
+  currency: string;
+  occurredAtUtc: string;
+  source: string;
+  referenceId?: string | null;
+  metadata?: string | null;
+};
