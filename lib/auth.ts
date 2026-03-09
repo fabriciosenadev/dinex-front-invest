@@ -91,7 +91,8 @@ export async function authorizedFetch(
 
   const firstTry = await fetch(path, {
     ...init,
-    headers: firstHeaders
+    headers: firstHeaders,
+    cache: "no-store"
   });
 
   if (firstTry.status !== 401) {
@@ -108,7 +109,8 @@ export async function authorizedFetch(
 
   const retryResponse = await fetch(path, {
     ...init,
-    headers: retryHeaders
+    headers: retryHeaders,
+    cache: "no-store"
   });
 
   return { response: retryResponse, nextSession: refreshed };
