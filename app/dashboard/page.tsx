@@ -4,14 +4,24 @@ import { FormEvent, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { authorizedFetch, clearStoredSession, getErrorMessage, persistSession, readStoredSession } from "../../lib/auth";
 import {
+  CorporateEventPayload,
+  CorporateEventType,
   CurrentUserPayload,
   ImportInvestmentsSpreadsheetPayload,
   PortfolioPosition,
+  RegisterCorporateEventPayload,
+  RegisterCorporateEventResult,
   RegisterMovementPayload,
   StatementEntryPayload,
   StatementEntryType,
   StoredSession
 } from "../../lib/types";
+import { UserSessionCard } from "./components/UserSessionCard";
+import { TabNavigation, DashboardTab } from "./components/TabNavigation";
+import { MovementSection } from "./components/MovementSection";
+import { StatementSection } from "./components/StatementSection";
+import { CorporateEventsSection } from "./components/CorporateEventsSection";
+import { PortfolioSection } from "./components/PortfolioSection";
 
 type MovementForm = {
   assetSymbol: string;
@@ -53,6 +63,24 @@ const defaultStatementForm: StatementForm = {
   source: "manual"
 };
 
+type CorporateEventForm = {
+  type: CorporateEventType;
+  sourceAssetSymbol: string;
+  targetAssetSymbol: string;
+  factor: string;
+  effectiveDate: string;
+  notes: string;
+};
+
+const defaultCorporateEventForm: CorporateEventForm = {
+  type: "TickerChange",
+  sourceAssetSymbol: "PETR4",
+  targetAssetSymbol: "",
+  factor: "1",
+  effectiveDate: new Date().toISOString().slice(0, 10),
+  notes: ""
+};
+
 const entryTypeOptions: Array<{ value: StatementEntryType; label: string }> = [
   { value: "Buy", label: "Compra" },
   { value: "Sell", label: "Venda" },
@@ -65,16 +93,20 @@ const entryTypeOptions: Array<{ value: StatementEntryType; label: string }> = [
 
 export default function DashboardPage() {
   const router = useRouter();
+  const [activeTab, setActiveTab] = useState<DashboardTab>("movements");
   const [session, setSession] = useState<StoredSession | null>(null);
   const [currentUser, setCurrentUser] = useState<CurrentUserPayload | null>(null);
   const [form, setForm] = useState<MovementForm>(defaultForm);
   const [statementForm, setStatementForm] = useState<StatementForm>(defaultStatementForm);
+  const [corporateEventForm, setCorporateEventForm] = useState<CorporateEventForm>(defaultCorporateEventForm);
   const [positions, setPositions] = useState<PortfolioPosition[]>([]);
   const [statementEntries, setStatementEntries] = useState<StatementEntryPayload[]>([]);
+  const [corporateEvents, setCorporateEvents] = useState<CorporateEventPayload[]>([]);
   const [importFiles, setImportFiles] = useState<File[]>([]);
   const [loading, setLoading] = useState(false);
   const [statementLoading, setStatementLoading] = useState(false);
   const [importLoading, setImportLoading] = useState(false);
+  const [corporateEventLoading, setCorporateEventLoading] = useState(false);
   const [status, setStatus] = useState("Carregando sessao...");
 
   function applyRefreshedSession(nextSession: StoredSession | null) {
@@ -90,6 +122,7 @@ export default function DashboardPage() {
     setCurrentUser(null);
     setPositions([]);
     setStatementEntries([]);
+    setCorporateEvents([]);
     setStatus(message);
     router.replace("/login");
   }
@@ -145,6 +178,23 @@ export default function DashboardPage() {
     setStatementEntries(payload ?? []);
   }
 
+  async function loadCorporateEvents(activeSession: StoredSession) {
+    const { response, nextSession } = await authorizedFetch(activeSession, "/api/corporate-events", { method: "GET" });
+    applyRefreshedSession(nextSession);
+
+    if (response.status === 401) {
+      clearSessionAndGoLogin("Sessao expirada. Faca login novamente.");
+      return;
+    }
+
+    if (!response.ok) {
+      throw new Error(await getErrorMessage(response, "Falha ao carregar eventos corporativos."));
+    }
+
+    const payload = (await response.json()) as CorporateEventPayload[];
+    setCorporateEvents(payload ?? []);
+  }
+
   useEffect(() => {
     const stored = readStoredSession();
     if (!stored) {
@@ -156,6 +206,7 @@ export default function DashboardPage() {
     loadCurrentUser(stored)
       .then(() => loadPortfolio(stored))
       .then(() => loadStatement(stored))
+      .then(() => loadCorporateEvents(stored))
       .then(() => setStatus("Pronto."))
       .catch((error) => setStatus(error instanceof Error ? error.message : "Erro ao carregar painel."));
   }, [router]);
@@ -275,9 +326,51 @@ export default function DashboardPage() {
     }
   }
 
-  function getEntryTypeLabel(type: StatementEntryType) {
-    const option = entryTypeOptions.find((x) => x.value === type);
-    return option?.label ?? type;
+  async function onSubmitCorporateEvent(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!session) {
+      setStatus("Sessao nao encontrada. Faca login.");
+      return;
+    }
+
+    setCorporateEventLoading(true);
+    setStatus("Aplicando evento corporativo...");
+
+    const payload: RegisterCorporateEventPayload = {
+      type: corporateEventForm.type,
+      sourceAssetSymbol: corporateEventForm.sourceAssetSymbol,
+      targetAssetSymbol: corporateEventForm.targetAssetSymbol || null,
+      factor: Number(corporateEventForm.factor),
+      effectiveAtUtc: new Date(`${corporateEventForm.effectiveDate}T00:00:00Z`).toISOString(),
+      notes: corporateEventForm.notes || null
+    };
+
+    try {
+      const { response, nextSession } = await authorizedFetch(session, "/api/corporate-events", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      });
+      applyRefreshedSession(nextSession);
+
+      if (response.status === 401) {
+        clearSessionAndGoLogin("Sessao expirada. Faca login novamente.");
+        return;
+      }
+
+      if (!response.ok) {
+        throw new Error(await getErrorMessage(response, "Falha ao cadastrar evento corporativo."));
+      }
+
+      const result = (await response.json()) as RegisterCorporateEventResult;
+      await loadCorporateEvents(nextSession ?? session);
+      await loadPortfolio(nextSession ?? session);
+      setStatus(`Evento aplicado com sucesso. Operacoes ajustadas: ${result.affectedOperations}.`);
+    } catch (error) {
+      setStatus(error instanceof Error ? error.message : "Erro ao cadastrar evento corporativo.");
+    } finally {
+      setCorporateEventLoading(false);
+    }
   }
 
   async function onSubmit(event: FormEvent<HTMLFormElement>) {
@@ -366,282 +459,76 @@ export default function DashboardPage() {
       <h1>DinEx Frontend</h1>
       <p>Painel autenticado.</p>
 
-      <section className="card">
-        <div className="toolbar">
-          <div>
-            <h2>Usuario autenticado</h2>
-            <p className="status">
-              {currentUser?.fullName} ({currentUser?.email})
-            </p>
-          </div>
-          <button type="button" onClick={onLogout}>
-            Sair
-          </button>
-        </div>
-      </section>
+      <UserSessionCard currentUser={currentUser} onLogout={onLogout} />
+      <TabNavigation activeTab={activeTab} onChange={setActiveTab} />
 
-      <section className="card">
-        <h2>Registrar Movimentacao</h2>
-        <form onSubmit={onSubmit}>
-          <div className="grid">
-            <label>
-              Ativo
-              <input
-                value={form.assetSymbol}
-                onChange={(e) => setForm({ ...form, assetSymbol: e.target.value.toUpperCase() })}
-                required
-              />
-            </label>
+      {activeTab === "movements" && (
+        <MovementSection
+          form={form}
+          loading={loading}
+          status={status}
+          onChange={setForm}
+          onSubmit={onSubmit}
+          onRefresh={async () => {
+            if (!session) {
+              setStatus("Sessao nao encontrada. Faca login.");
+              return;
+            }
 
-            <label>
-              Tipo
-              <select value={form.type} onChange={(e) => setForm({ ...form, type: e.target.value as "1" | "2" })}>
-                <option value="1">Compra (1)</option>
-                <option value="2">Venda (2)</option>
-              </select>
-            </label>
+            await loadPortfolio(session);
+            setStatus("Carteira atualizada.");
+          }}
+        />
+      )}
 
-            <label>
-              Quantidade
-              <input
-                type="number"
-                min="0.0001"
-                step="0.0001"
-                value={form.quantity}
-                onChange={(e) => setForm({ ...form, quantity: e.target.value })}
-                required
-              />
-            </label>
+      {activeTab === "statement" && (
+        <StatementSection
+          form={statementForm}
+          entries={statementEntries}
+          entryTypeOptions={entryTypeOptions}
+          onChange={setStatementForm}
+          importState={{
+            importLoading,
+            statementLoading,
+            onImport: onImportSpreadsheets,
+            onStatementSubmit: onSubmitStatement,
+            onRefresh: async () => {
+              if (!session) {
+                setStatus("Sessao nao encontrada. Faca login.");
+                return;
+              }
 
-            <label>
-              Preco Unitario
-              <input
-                type="number"
-                min="0.0001"
-                step="0.0001"
-                value={form.unitPrice}
-                onChange={(e) => setForm({ ...form, unitPrice: e.target.value })}
-                required
-              />
-            </label>
+              await loadStatement(session);
+              setStatus("Extrato atualizado.");
+            },
+            onClearAll: onClearAllEntries,
+            onImportFilesChange: setImportFiles
+          }}
+        />
+      )}
 
-            <label>
-              Moeda
-              <input
-                maxLength={3}
-                value={form.currency}
-                onChange={(e) => setForm({ ...form, currency: e.target.value.toUpperCase() })}
-                required
-              />
-            </label>
-          </div>
+      {activeTab === "corporate-events" && (
+        <CorporateEventsSection
+          form={corporateEventForm}
+          events={corporateEvents}
+          loading={corporateEventLoading}
+          onChange={setCorporateEventForm}
+          onSubmit={onSubmitCorporateEvent}
+          onRefresh={async () => {
+            if (!session) {
+              setStatus("Sessao nao encontrada. Faca login.");
+              return;
+            }
 
-          <div className="row-actions">
-            <button type="submit" disabled={loading}>
-              {loading ? "Salvando..." : "Registrar"}
-            </button>
-            <button
-              type="button"
-              onClick={() => session && loadPortfolio(session).catch(() => setStatus("Falha ao atualizar carteira."))}
-              disabled={loading}
-            >
-              Atualizar Carteira
-            </button>
-          </div>
-        </form>
-        <p className="status">{status}</p>
-      </section>
+            await loadCorporateEvents(session);
+            setStatus("Eventos corporativos atualizados.");
+          }}
+        />
+      )}
 
-      <section className="card">
-        <h2>Carteira</h2>
-        <table>
-          <thead>
-            <tr>
-              <th>Ativo</th>
-              <th>Quantidade</th>
-              <th>Preco Medio</th>
-              <th>Moeda</th>
-            </tr>
-          </thead>
-          <tbody>
-            {positions.map((position) => (
-              <tr key={position.assetSymbol}>
-                <td>{position.assetSymbol}</td>
-                <td>{position.quantity}</td>
-                <td>{position.averagePrice.toFixed(2)}</td>
-                <td>{position.currency}</td>
-              </tr>
-            ))}
-            {positions.length === 0 && (
-              <tr>
-                <td colSpan={4}>Sem posicoes ainda.</td>
-              </tr>
-            )}
-          </tbody>
-        </table>
-      </section>
+      {activeTab === "portfolio" && <PortfolioSection positions={positions} />}
 
-      <section className="card">
-        <h2>Extrato de Investimentos</h2>
-        <form onSubmit={onImportSpreadsheets}>
-          <div className="grid">
-            <label>
-              Importar planilhas B3 (.xlsx)
-              <input
-                type="file"
-                accept=".xlsx"
-                multiple
-                onChange={(event) => setImportFiles(Array.from(event.target.files ?? []))}
-              />
-            </label>
-          </div>
-
-          <div className="row-actions">
-            <button type="submit" disabled={importLoading}>
-              {importLoading ? "Importando..." : "Importar Arquivos"}
-            </button>
-          </div>
-        </form>
-
-        <form onSubmit={onSubmitStatement}>
-          <div className="grid">
-            <label>
-              Tipo de lancamento
-              <select
-                value={statementForm.type}
-                onChange={(e) => setStatementForm({ ...statementForm, type: e.target.value as StatementEntryType })}
-              >
-                {entryTypeOptions.map((option) => (
-                  <option key={option.value} value={option.value}>
-                    {option.label}
-                  </option>
-                ))}
-              </select>
-            </label>
-
-            <label>
-              Descricao
-              <input
-                value={statementForm.description}
-                onChange={(e) => setStatementForm({ ...statementForm, description: e.target.value })}
-                placeholder="Opcional"
-              />
-            </label>
-
-            <label>
-              Ativo (opcional)
-              <input
-                value={statementForm.assetSymbol}
-                onChange={(e) => setStatementForm({ ...statementForm, assetSymbol: e.target.value.toUpperCase() })}
-              />
-            </label>
-
-            <label>
-              Quantidade (opcional)
-              <input
-                type="number"
-                min="0.0001"
-                step="0.0001"
-                value={statementForm.quantity}
-                onChange={(e) => setStatementForm({ ...statementForm, quantity: e.target.value })}
-              />
-            </label>
-
-            <label>
-              Preco unitario (opcional)
-              <input
-                type="number"
-                min="0.0001"
-                step="0.0001"
-                value={statementForm.unitPriceAmount}
-                onChange={(e) => setStatementForm({ ...statementForm, unitPriceAmount: e.target.value })}
-              />
-            </label>
-
-            <label>
-              Valor bruto
-              <input
-                type="number"
-                min="0"
-                step="0.0001"
-                value={statementForm.grossAmount}
-                onChange={(e) => setStatementForm({ ...statementForm, grossAmount: e.target.value })}
-                required
-              />
-            </label>
-
-            <label>
-              Valor liquido
-              <input
-                type="number"
-                min="0"
-                step="0.0001"
-                value={statementForm.netAmount}
-                onChange={(e) => setStatementForm({ ...statementForm, netAmount: e.target.value })}
-                required
-              />
-            </label>
-
-            <label>
-              Moeda
-              <input
-                maxLength={3}
-                value={statementForm.currency}
-                onChange={(e) => setStatementForm({ ...statementForm, currency: e.target.value.toUpperCase() })}
-                required
-              />
-            </label>
-          </div>
-
-          <div className="row-actions">
-            <button type="submit" disabled={statementLoading}>
-              {statementLoading ? "Salvando..." : "Adicionar no Extrato"}
-            </button>
-            <button type="button" onClick={onClearAllEntries} disabled={statementLoading || importLoading}>
-              Zerar Lancamentos
-            </button>
-            <button
-              type="button"
-              onClick={() => session && loadStatement(session).catch(() => setStatus("Falha ao atualizar extrato."))}
-              disabled={statementLoading}
-            >
-              Atualizar Extrato
-            </button>
-          </div>
-        </form>
-
-        <table>
-          <thead>
-            <tr>
-              <th>Data</th>
-              <th>Tipo</th>
-              <th>Descricao</th>
-              <th>Ativo</th>
-              <th>Bruto</th>
-              <th>Liquido</th>
-              <th>Moeda</th>
-            </tr>
-          </thead>
-          <tbody>
-            {statementEntries.map((entry) => (
-              <tr key={entry.id}>
-                <td>{new Date(entry.occurredAtUtc).toLocaleDateString("pt-BR")}</td>
-                <td>{getEntryTypeLabel(entry.type)}</td>
-                <td>{entry.description}</td>
-                <td>{entry.assetSymbol ?? "-"}</td>
-                <td>{entry.grossAmount.toFixed(2)}</td>
-                <td>{entry.netAmount.toFixed(2)}</td>
-                <td>{entry.currency}</td>
-              </tr>
-            ))}
-            {statementEntries.length === 0 && (
-              <tr>
-                <td colSpan={7}>Sem lancamentos no extrato ainda.</td>
-              </tr>
-            )}
-          </tbody>
-        </table>
-      </section>
+      <p className="status">{status}</p>
     </main>
   );
 }

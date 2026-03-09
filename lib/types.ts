@@ -77,3 +77,30 @@ export type ImportInvestmentsSpreadsheetPayload = {
   skippedRows: number;
   warnings: string[];
 };
+
+export type CorporateEventType = "TickerChange" | "Split" | "ReverseSplit";
+
+export type RegisterCorporateEventPayload = {
+  type: CorporateEventType;
+  sourceAssetSymbol: string;
+  targetAssetSymbol?: string | null;
+  factor: number;
+  effectiveAtUtc: string;
+  notes?: string | null;
+};
+
+export type RegisterCorporateEventResult = {
+  eventId: string;
+  affectedOperations: number;
+};
+
+export type CorporateEventPayload = {
+  id: string;
+  type: CorporateEventType;
+  sourceAssetSymbol: string;
+  targetAssetSymbol?: string | null;
+  factor: number;
+  effectiveAtUtc: string;
+  notes?: string | null;
+  appliedAtUtc: string;
+};

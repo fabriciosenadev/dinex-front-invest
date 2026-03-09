@@ -96,6 +96,22 @@ td {
   color: #445a82;
 }
 
+.tabs {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.tab-button {
+  background: #e8eefc;
+  color: #17315f;
+}
+
+.tab-button.active {
+  background: #1f4eea;
+  color: #fff;
+}
+
 @media (max-width: 720px) {
   .grid {
     grid-template-columns: 1fr;
