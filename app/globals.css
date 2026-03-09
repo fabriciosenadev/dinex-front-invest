@@ -112,6 +112,11 @@ td {
   color: #fff;
 }
 
+.inline-actions {
+  display: flex;
+  gap: 8px;
+}
+
 @media (max-width: 720px) {
   .grid {
     grid-template-columns: 1fr;

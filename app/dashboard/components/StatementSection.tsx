@@ -21,7 +21,6 @@ type ImportFormState = {
   onImport: (event: FormEvent<HTMLFormElement>) => Promise<void>;
   onStatementSubmit: (event: FormEvent<HTMLFormElement>) => Promise<void>;
   onRefresh: () => Promise<void>;
-  onClearAll: () => Promise<void>;
   onImportFilesChange: (files: File[]) => void;
 };
 
@@ -109,9 +108,6 @@ export function StatementSection({ form, entries, entryTypeOptions, onChange, im
         <div className="row-actions">
           <button type="submit" disabled={importState.statementLoading}>
             {importState.statementLoading ? "Salvando..." : "Adicionar no Extrato"}
-          </button>
-          <button type="button" onClick={importState.onClearAll} disabled={importState.statementLoading || importState.importLoading}>
-            Zerar Lancamentos
           </button>
           <button type="button" onClick={importState.onRefresh} disabled={importState.statementLoading}>
             Atualizar Extrato

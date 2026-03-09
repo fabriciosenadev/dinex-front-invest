@@ -102,6 +102,7 @@ export default function DashboardPage() {
   const [positions, setPositions] = useState<PortfolioPosition[]>([]);
   const [statementEntries, setStatementEntries] = useState<StatementEntryPayload[]>([]);
   const [corporateEvents, setCorporateEvents] = useState<CorporateEventPayload[]>([]);
+  const [editingCorporateEventId, setEditingCorporateEventId] = useState<string | null>(null);
   const [importFiles, setImportFiles] = useState<File[]>([]);
   const [loading, setLoading] = useState(false);
   const [statementLoading, setStatementLoading] = useState(false);
@@ -334,7 +335,7 @@ export default function DashboardPage() {
     }
 
     setCorporateEventLoading(true);
-    setStatus("Aplicando evento corporativo...");
+    setStatus(editingCorporateEventId ? "Atualizando evento corporativo..." : "Aplicando evento corporativo...");
 
     const payload: RegisterCorporateEventPayload = {
       type: corporateEventForm.type,
@@ -346,8 +347,9 @@ export default function DashboardPage() {
     };
 
     try {
-      const { response, nextSession } = await authorizedFetch(session, "/api/corporate-events", {
-        method: "POST",
+      const target = editingCorporateEventId ? `/api/corporate-events/${editingCorporateEventId}` : "/api/corporate-events";
+      const { response, nextSession } = await authorizedFetch(session, target, {
+        method: editingCorporateEventId ? "PUT" : "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload)
       });
@@ -365,9 +367,73 @@ export default function DashboardPage() {
       const result = (await response.json()) as RegisterCorporateEventResult;
       await loadCorporateEvents(nextSession ?? session);
       await loadPortfolio(nextSession ?? session);
-      setStatus(`Evento aplicado com sucesso. Operacoes ajustadas: ${result.affectedOperations}.`);
+      setEditingCorporateEventId(null);
+      setCorporateEventForm(defaultCorporateEventForm);
+      setStatus(
+        `${editingCorporateEventId ? "Evento atualizado" : "Evento aplicado"} com sucesso. Operacoes ajustadas: ${result.affectedOperations}.`
+      );
     } catch (error) {
       setStatus(error instanceof Error ? error.message : "Erro ao cadastrar evento corporativo.");
+    } finally {
+      setCorporateEventLoading(false);
+    }
+  }
+
+  function onEditCorporateEvent(corporateEvent: CorporateEventPayload) {
+    setEditingCorporateEventId(corporateEvent.id);
+    setCorporateEventForm({
+      type: corporateEvent.type,
+      sourceAssetSymbol: corporateEvent.sourceAssetSymbol,
+      targetAssetSymbol: corporateEvent.targetAssetSymbol ?? "",
+      factor: String(corporateEvent.factor),
+      effectiveDate: corporateEvent.effectiveAtUtc.slice(0, 10),
+      notes: corporateEvent.notes ?? ""
+    });
+  }
+
+  function onCancelCorporateEventEdit() {
+    setEditingCorporateEventId(null);
+    setCorporateEventForm(defaultCorporateEventForm);
+  }
+
+  async function onDeleteCorporateEvent(eventId: string) {
+    if (!session) {
+      setStatus("Sessao nao encontrada. Faca login.");
+      return;
+    }
+
+    const confirmed = window.confirm("Deseja excluir esse evento corporativo?");
+    if (!confirmed) {
+      return;
+    }
+
+    setCorporateEventLoading(true);
+    setStatus("Excluindo evento corporativo...");
+
+    try {
+      const { response, nextSession } = await authorizedFetch(session, `/api/corporate-events/${eventId}`, {
+        method: "DELETE"
+      });
+      applyRefreshedSession(nextSession);
+
+      if (response.status === 401) {
+        clearSessionAndGoLogin("Sessao expirada. Faca login novamente.");
+        return;
+      }
+
+      if (!response.ok) {
+        throw new Error(await getErrorMessage(response, "Falha ao excluir evento corporativo."));
+      }
+
+      await loadCorporateEvents(nextSession ?? session);
+      await loadPortfolio(nextSession ?? session);
+      if (editingCorporateEventId === eventId) {
+        onCancelCorporateEventEdit();
+      }
+
+      setStatus("Evento corporativo excluido com sucesso.");
+    } catch (error) {
+      setStatus(error instanceof Error ? error.message : "Erro ao excluir evento corporativo.");
     } finally {
       setCorporateEventLoading(false);
     }
@@ -424,12 +490,12 @@ export default function DashboardPage() {
       return;
     }
 
-    const confirmed = window.confirm("Tem certeza que deseja apagar todos os lancamentos da carteira e do extrato?");
+    const confirmed = window.confirm("Tem certeza que deseja apagar carteira, extrato e eventos corporativos?");
     if (!confirmed) {
       return;
     }
 
-    setStatus("Limpando lancamentos...");
+    setStatus("Limpando todos os dados de investimento...");
 
     try {
       const { response, nextSession } = await authorizedFetch(session, "/api/statement", {
@@ -443,14 +509,15 @@ export default function DashboardPage() {
       }
 
       if (!response.ok) {
-        throw new Error(await getErrorMessage(response, "Falha ao apagar lancamentos."));
+        throw new Error(await getErrorMessage(response, "Falha ao apagar dados de investimento."));
       }
 
       await loadPortfolio(nextSession ?? session);
       await loadStatement(nextSession ?? session);
-      setStatus("Todos os lancamentos foram apagados.");
+      await loadCorporateEvents(nextSession ?? session);
+      setStatus("Todos os dados de investimento foram apagados.");
     } catch (error) {
-      setStatus(error instanceof Error ? error.message : "Erro ao apagar lancamentos.");
+      setStatus(error instanceof Error ? error.message : "Erro ao apagar dados de investimento.");
     }
   }
 
@@ -460,6 +527,17 @@ export default function DashboardPage() {
       <p>Painel autenticado.</p>
 
       <UserSessionCard currentUser={currentUser} onLogout={onLogout} />
+      <section className="card">
+        <div className="toolbar">
+          <div>
+            <h2>Zerar dados de investimento</h2>
+            <p className="status">Apaga carteira, extrato e eventos corporativos cadastrados.</p>
+          </div>
+          <button type="button" onClick={onClearAllEntries} disabled={statementLoading || importLoading || corporateEventLoading}>
+            Zerar Tudo
+          </button>
+        </div>
+      </section>
       <TabNavigation activeTab={activeTab} onChange={setActiveTab} />
 
       {activeTab === "movements" && (
@@ -501,7 +579,6 @@ export default function DashboardPage() {
               await loadStatement(session);
               setStatus("Extrato atualizado.");
             },
-            onClearAll: onClearAllEntries,
             onImportFilesChange: setImportFiles
           }}
         />
@@ -512,6 +589,7 @@ export default function DashboardPage() {
           form={corporateEventForm}
           events={corporateEvents}
           loading={corporateEventLoading}
+          editingEventId={editingCorporateEventId}
           onChange={setCorporateEventForm}
           onSubmit={onSubmitCorporateEvent}
           onRefresh={async () => {
@@ -523,6 +601,9 @@ export default function DashboardPage() {
             await loadCorporateEvents(session);
             setStatus("Eventos corporativos atualizados.");
           }}
+          onEdit={onEditCorporateEvent}
+          onDelete={onDeleteCorporateEvent}
+          onCancelEdit={onCancelCorporateEventEdit}
         />
       )}
 

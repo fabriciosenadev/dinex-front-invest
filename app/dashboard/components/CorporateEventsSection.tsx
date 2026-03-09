@@ -16,9 +16,13 @@ type CorporateEventsSectionProps = {
   form: CorporateEventForm;
   events: CorporateEventPayload[];
   loading: boolean;
+  editingEventId: string | null;
   onChange: (next: CorporateEventForm) => void;
   onSubmit: (event: FormEvent<HTMLFormElement>) => Promise<void>;
   onRefresh: () => Promise<void>;
+  onEdit: (event: CorporateEventPayload) => void;
+  onDelete: (id: string) => Promise<void>;
+  onCancelEdit: () => void;
 };
 
 const eventTypeOptions: Array<{ value: CorporateEventType; label: string }> = [
@@ -27,7 +31,18 @@ const eventTypeOptions: Array<{ value: CorporateEventType; label: string }> = [
   { value: "ReverseSplit", label: "Grupamento" }
 ];
 
-export function CorporateEventsSection({ form, events, loading, onChange, onSubmit, onRefresh }: CorporateEventsSectionProps) {
+export function CorporateEventsSection({
+  form,
+  events,
+  loading,
+  editingEventId,
+  onChange,
+  onSubmit,
+  onRefresh,
+  onEdit,
+  onDelete,
+  onCancelEdit
+}: CorporateEventsSectionProps) {
   const requiresTarget = form.type === "TickerChange";
 
   return (
@@ -79,8 +94,13 @@ export function CorporateEventsSection({ form, events, loading, onChange, onSubm
 
         <div className="row-actions">
           <button type="submit" disabled={loading}>
-            {loading ? "Aplicando..." : "Cadastrar e Aplicar Evento"}
+            {loading ? "Aplicando..." : editingEventId ? "Salvar Alteracao" : "Cadastrar e Aplicar Evento"}
           </button>
+          {editingEventId && (
+            <button type="button" onClick={onCancelEdit} disabled={loading}>
+              Cancelar Edicao
+            </button>
+          )}
           <button type="button" onClick={onRefresh} disabled={loading}>
             Atualizar Eventos
           </button>
@@ -96,6 +116,7 @@ export function CorporateEventsSection({ form, events, loading, onChange, onSubm
             <th>Destino</th>
             <th>Fator</th>
             <th>Obs</th>
+            <th>Acoes</th>
           </tr>
         </thead>
         <tbody>
@@ -107,11 +128,21 @@ export function CorporateEventsSection({ form, events, loading, onChange, onSubm
               <td>{entry.targetAssetSymbol ?? "-"}</td>
               <td>{entry.factor}</td>
               <td>{entry.notes ?? "-"}</td>
+              <td>
+                <div className="inline-actions">
+                  <button type="button" onClick={() => onEdit(entry)} disabled={loading}>
+                    Editar
+                  </button>
+                  <button type="button" onClick={() => onDelete(entry.id)} disabled={loading}>
+                    Excluir
+                  </button>
+                </div>
+              </td>
             </tr>
           ))}
           {events.length === 0 && (
             <tr>
-              <td colSpan={6}>Sem eventos cadastrados.</td>
+              <td colSpan={7}>Sem eventos cadastrados.</td>
             </tr>
           )}
         </tbody>
