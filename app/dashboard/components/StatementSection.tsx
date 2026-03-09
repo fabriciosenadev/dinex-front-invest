@@ -21,7 +21,7 @@ type ImportFormState = {
   onImport: (event: FormEvent<HTMLFormElement>) => Promise<void>;
   onStatementSubmit: (event: FormEvent<HTMLFormElement>) => Promise<void>;
   onRefresh: () => Promise<void>;
-  onImportFilesChange: (files: File[]) => void;
+  onImportFileChange: (file: File | null) => void;
 };
 
 type StatementSectionProps = {
@@ -45,7 +45,7 @@ export function StatementSection({ form, entries, entryTypeOptions, onChange, im
         <div className="grid">
           <label>
             Importar planilhas B3 (.xlsx)
-            <input type="file" accept=".xlsx" multiple onChange={(event) => importState.onImportFilesChange(Array.from(event.target.files ?? []))} />
+            <input type="file" accept=".xlsx" onChange={(event) => importState.onImportFileChange(event.target.files?.[0] ?? null)} />
           </label>
         </div>
 

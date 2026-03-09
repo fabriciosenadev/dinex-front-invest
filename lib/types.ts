@@ -5,6 +5,22 @@ export type PortfolioPosition = {
   currency: string;
 };
 
+export type ReconcilePortfolioAssetPayload = {
+  assetSymbol: string;
+  expectedQuantity: number;
+  currentQuantity: number;
+  difference: number;
+  status: "OK" | "DIVERGENTE";
+  reason: string;
+};
+
+export type ReconcilePortfolioPayload = {
+  totalAssets: number;
+  matchedAssets: number;
+  divergentAssets: number;
+  assets: ReconcilePortfolioAssetPayload[];
+};
+
 export type ErrorResponse = {
   errors: string[];
 };

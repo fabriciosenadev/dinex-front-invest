@@ -9,6 +9,7 @@ import {
   CurrentUserPayload,
   ImportInvestmentsSpreadsheetPayload,
   PortfolioPosition,
+  ReconcilePortfolioPayload,
   RegisterCorporateEventPayload,
   RegisterCorporateEventResult,
   RegisterMovementPayload,
@@ -100,14 +101,17 @@ export default function DashboardPage() {
   const [statementForm, setStatementForm] = useState<StatementForm>(defaultStatementForm);
   const [corporateEventForm, setCorporateEventForm] = useState<CorporateEventForm>(defaultCorporateEventForm);
   const [positions, setPositions] = useState<PortfolioPosition[]>([]);
+  const [reconcileResult, setReconcileResult] = useState<ReconcilePortfolioPayload | null>(null);
+  const [reconcileFile, setReconcileFile] = useState<File | null>(null);
   const [statementEntries, setStatementEntries] = useState<StatementEntryPayload[]>([]);
   const [corporateEvents, setCorporateEvents] = useState<CorporateEventPayload[]>([]);
   const [editingCorporateEventId, setEditingCorporateEventId] = useState<string | null>(null);
-  const [importFiles, setImportFiles] = useState<File[]>([]);
+  const [importFile, setImportFile] = useState<File | null>(null);
   const [loading, setLoading] = useState(false);
   const [statementLoading, setStatementLoading] = useState(false);
   const [importLoading, setImportLoading] = useState(false);
   const [corporateEventLoading, setCorporateEventLoading] = useState(false);
+  const [reconcileLoading, setReconcileLoading] = useState(false);
   const [status, setStatus] = useState("Carregando sessao...");
 
   function applyRefreshedSession(nextSession: StoredSession | null) {
@@ -122,6 +126,7 @@ export default function DashboardPage() {
     setSession(null);
     setCurrentUser(null);
     setPositions([]);
+    setReconcileResult(null);
     setStatementEntries([]);
     setCorporateEvents([]);
     setStatus(message);
@@ -282,8 +287,8 @@ export default function DashboardPage() {
       return;
     }
 
-    if (importFiles.length === 0) {
-      setStatus("Selecione pelo menos um arquivo .xlsx para importar.");
+    if (!importFile) {
+      setStatus("Selecione um arquivo .xlsx para importar.");
       return;
     }
 
@@ -291,11 +296,8 @@ export default function DashboardPage() {
     setStatus("Importando planilhas...");
 
     try {
-      const sortedFiles = [...importFiles].sort((a, b) => a.name.localeCompare(b.name, "pt-BR"));
       const formData = new FormData();
-      for (const file of sortedFiles) {
-        formData.append("files", file, file.name);
-      }
+      formData.append("files", importFile, importFile.name);
 
       const { response, nextSession } = await authorizedFetch(session, "/api/statement/import", {
         method: "POST",
@@ -315,9 +317,9 @@ export default function DashboardPage() {
       const payload = (await response.json()) as ImportInvestmentsSpreadsheetPayload;
       await loadPortfolio(nextSession ?? session);
       await loadStatement(nextSession ?? session);
-      setImportFiles([]);
+      setImportFile(null);
       setStatus(
-        `Importacao concluida. Arquivos: ${payload.processedFiles}, linhas: ${payload.totalRowsRead}, ` +
+        `Importacao concluida. Arquivo: ${payload.processedFiles}, linhas: ${payload.totalRowsRead}, ` +
           `movimentos: ${payload.importedMovements}, extrato: ${payload.importedStatementEntries}, ignoradas: ${payload.skippedRows}.`
       );
     } catch (error) {
@@ -484,18 +486,62 @@ export default function DashboardPage() {
     }
   }
 
-  async function onClearAllEntries() {
+  async function onReconcilePortfolio(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
     if (!session) {
       setStatus("Sessao nao encontrada. Faca login.");
       return;
     }
 
-    const confirmed = window.confirm("Tem certeza que deseja apagar carteira, extrato e eventos corporativos?");
+    if (!reconcileFile) {
+      setStatus("Selecione um arquivo .xlsx de posição para reconciliar.");
+      return;
+    }
+
+    setReconcileLoading(true);
+    setStatus("Reconciliando carteira...");
+
+    try {
+      const formData = new FormData();
+      formData.append("file", reconcileFile, reconcileFile.name);
+
+      const { response, nextSession } = await authorizedFetch(session, "/api/movements/portfolio/reconcile", {
+        method: "POST",
+        body: formData
+      });
+      applyRefreshedSession(nextSession);
+
+      if (response.status === 401) {
+        clearSessionAndGoLogin("Sessao expirada. Faca login novamente.");
+        return;
+      }
+
+      if (!response.ok) {
+        throw new Error(await getErrorMessage(response, "Falha ao reconciliar carteira."));
+      }
+
+      const payload = (await response.json()) as ReconcilePortfolioPayload;
+      setReconcileResult(payload);
+      setStatus(`Reconciliação concluida. OK: ${payload.matchedAssets}, divergentes: ${payload.divergentAssets}.`);
+    } catch (error) {
+      setStatus(error instanceof Error ? error.message : "Erro ao reconciliar carteira.");
+    } finally {
+      setReconcileLoading(false);
+    }
+  }
+
+  async function onClearInvestmentData() {
+    if (!session) {
+      setStatus("Sessao nao encontrada. Faca login.");
+      return;
+    }
+
+    const confirmed = window.confirm("Tem certeza que deseja apagar carteira e extrato?");
     if (!confirmed) {
       return;
     }
 
-    setStatus("Limpando todos os dados de investimento...");
+    setStatus("Limpando carteira e extrato...");
 
     try {
       const { response, nextSession } = await authorizedFetch(session, "/api/statement", {
@@ -509,15 +555,53 @@ export default function DashboardPage() {
       }
 
       if (!response.ok) {
-        throw new Error(await getErrorMessage(response, "Falha ao apagar dados de investimento."));
+        throw new Error(await getErrorMessage(response, "Falha ao apagar carteira e extrato."));
       }
 
       await loadPortfolio(nextSession ?? session);
       await loadStatement(nextSession ?? session);
       await loadCorporateEvents(nextSession ?? session);
-      setStatus("Todos os dados de investimento foram apagados.");
+      setReconcileResult(null);
+      setReconcileFile(null);
+      setStatus("Carteira e extrato foram apagados.");
     } catch (error) {
-      setStatus(error instanceof Error ? error.message : "Erro ao apagar dados de investimento.");
+      setStatus(error instanceof Error ? error.message : "Erro ao apagar carteira e extrato.");
+    }
+  }
+
+  async function onClearCorporateEvents() {
+    if (!session) {
+      setStatus("Sessao nao encontrada. Faca login.");
+      return;
+    }
+
+    const confirmed = window.confirm("Tem certeza que deseja apagar todos os eventos corporativos?");
+    if (!confirmed) {
+      return;
+    }
+
+    setStatus("Limpando eventos corporativos...");
+
+    try {
+      const { response, nextSession } = await authorizedFetch(session, "/api/corporate-events", {
+        method: "DELETE"
+      });
+      applyRefreshedSession(nextSession);
+
+      if (response.status === 401) {
+        clearSessionAndGoLogin("Sessao expirada. Faca login novamente.");
+        return;
+      }
+
+      if (!response.ok) {
+        throw new Error(await getErrorMessage(response, "Falha ao apagar eventos corporativos."));
+      }
+
+      await loadCorporateEvents(nextSession ?? session);
+      await loadPortfolio(nextSession ?? session);
+      setStatus("Eventos corporativos foram apagados.");
+    } catch (error) {
+      setStatus(error instanceof Error ? error.message : "Erro ao apagar eventos corporativos.");
     }
   }
 
@@ -531,11 +615,16 @@ export default function DashboardPage() {
         <div className="toolbar">
           <div>
             <h2>Zerar dados de investimento</h2>
-            <p className="status">Apaga carteira, extrato e eventos corporativos cadastrados.</p>
+            <p className="status">Use os botoes separados para limpar eventos ou carteira/extrato.</p>
           </div>
-          <button type="button" onClick={onClearAllEntries} disabled={statementLoading || importLoading || corporateEventLoading}>
-            Zerar Tudo
-          </button>
+          <div className="row-actions">
+            <button type="button" onClick={onClearCorporateEvents} disabled={statementLoading || importLoading || corporateEventLoading}>
+              Zerar Eventos
+            </button>
+            <button type="button" onClick={onClearInvestmentData} disabled={statementLoading || importLoading || corporateEventLoading}>
+              Zerar Carteira/Extrato
+            </button>
+          </div>
         </div>
       </section>
       <TabNavigation activeTab={activeTab} onChange={setActiveTab} />
@@ -579,7 +668,7 @@ export default function DashboardPage() {
               await loadStatement(session);
               setStatus("Extrato atualizado.");
             },
-            onImportFilesChange: setImportFiles
+            onImportFileChange: setImportFile
           }}
         />
       )}
@@ -607,7 +696,15 @@ export default function DashboardPage() {
         />
       )}
 
-      {activeTab === "portfolio" && <PortfolioSection positions={positions} />}
+      {activeTab === "portfolio" && (
+        <PortfolioSection
+          positions={positions}
+          reconcileResult={reconcileResult}
+          reconcileLoading={reconcileLoading}
+          onReconcile={onReconcilePortfolio}
+          onReconcileFileChange={setReconcileFile}
+        />
+      )}
 
       <p className="status">{status}</p>
     </main>
