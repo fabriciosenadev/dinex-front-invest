@@ -68,3 +68,12 @@ export type StatementEntryPayload = {
   referenceId?: string | null;
   metadata?: string | null;
 };
+
+export type ImportInvestmentsSpreadsheetPayload = {
+  processedFiles: number;
+  totalRowsRead: number;
+  importedMovements: number;
+  importedStatementEntries: number;
+  skippedRows: number;
+  warnings: string[];
+};

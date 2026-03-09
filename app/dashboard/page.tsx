@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { authorizedFetch, clearStoredSession, getErrorMessage, persistSession, readStoredSession } from "../../lib/auth";
 import {
   CurrentUserPayload,
+  ImportInvestmentsSpreadsheetPayload,
   PortfolioPosition,
   RegisterMovementPayload,
   StatementEntryPayload,
@@ -42,7 +43,7 @@ type StatementForm = {
 
 const defaultStatementForm: StatementForm = {
   type: "Income",
-  description: "Dividendo recebido",
+  description: "",
   assetSymbol: "PETR4",
   quantity: "",
   unitPriceAmount: "",
@@ -70,8 +71,10 @@ export default function DashboardPage() {
   const [statementForm, setStatementForm] = useState<StatementForm>(defaultStatementForm);
   const [positions, setPositions] = useState<PortfolioPosition[]>([]);
   const [statementEntries, setStatementEntries] = useState<StatementEntryPayload[]>([]);
+  const [importFiles, setImportFiles] = useState<File[]>([]);
   const [loading, setLoading] = useState(false);
   const [statementLoading, setStatementLoading] = useState(false);
+  const [importLoading, setImportLoading] = useState(false);
   const [status, setStatus] = useState("Carregando sessao...");
 
   function applyRefreshedSession(nextSession: StoredSession | null) {
@@ -108,8 +111,14 @@ export default function DashboardPage() {
     setCurrentUser(payload);
   }
 
-  async function loadPortfolio() {
-    const response = await fetch("/api/movements/portfolio", { method: "GET" });
+  async function loadPortfolio(activeSession: StoredSession) {
+    const { response, nextSession } = await authorizedFetch(activeSession, "/api/movements/portfolio", { method: "GET" });
+    applyRefreshedSession(nextSession);
+
+    if (response.status === 401) {
+      clearSessionAndGoLogin("Sessao expirada. Faca login novamente.");
+      return;
+    }
 
     if (!response.ok) {
       throw new Error(await getErrorMessage(response, "Falha ao carregar carteira."));
@@ -145,7 +154,7 @@ export default function DashboardPage() {
 
     setSession(stored);
     loadCurrentUser(stored)
-      .then(() => loadPortfolio())
+      .then(() => loadPortfolio(stored))
       .then(() => loadStatement(stored))
       .then(() => setStatus("Pronto."))
       .catch((error) => setStatus(error instanceof Error ? error.message : "Erro ao carregar painel."));
@@ -214,6 +223,58 @@ export default function DashboardPage() {
     }
   }
 
+  async function onImportSpreadsheets(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!session) {
+      setStatus("Sessao nao encontrada. Faca login.");
+      return;
+    }
+
+    if (importFiles.length === 0) {
+      setStatus("Selecione pelo menos um arquivo .xlsx para importar.");
+      return;
+    }
+
+    setImportLoading(true);
+    setStatus("Importando planilhas...");
+
+    try {
+      const sortedFiles = [...importFiles].sort((a, b) => a.name.localeCompare(b.name, "pt-BR"));
+      const formData = new FormData();
+      for (const file of sortedFiles) {
+        formData.append("files", file, file.name);
+      }
+
+      const { response, nextSession } = await authorizedFetch(session, "/api/statement/import", {
+        method: "POST",
+        body: formData
+      });
+      applyRefreshedSession(nextSession);
+
+      if (response.status === 401) {
+        clearSessionAndGoLogin("Sessao expirada. Faca login novamente.");
+        return;
+      }
+
+      if (!response.ok) {
+        throw new Error(await getErrorMessage(response, "Falha ao importar planilhas."));
+      }
+
+      const payload = (await response.json()) as ImportInvestmentsSpreadsheetPayload;
+      await loadPortfolio(nextSession ?? session);
+      await loadStatement(nextSession ?? session);
+      setImportFiles([]);
+      setStatus(
+        `Importacao concluida. Arquivos: ${payload.processedFiles}, linhas: ${payload.totalRowsRead}, ` +
+          `movimentos: ${payload.importedMovements}, extrato: ${payload.importedStatementEntries}, ignoradas: ${payload.skippedRows}.`
+      );
+    } catch (error) {
+      setStatus(error instanceof Error ? error.message : "Erro ao importar planilhas.");
+    } finally {
+      setImportLoading(false);
+    }
+  }
+
   function getEntryTypeLabel(type: StatementEntryType) {
     const option = entryTypeOptions.find((x) => x.value === type);
     return option?.label ?? type;
@@ -221,6 +282,11 @@ export default function DashboardPage() {
 
   async function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (!session) {
+      setStatus("Sessao nao encontrada. Faca login.");
+      return;
+    }
+
     setLoading(true);
     setStatus("Enviando movimentacao...");
 
@@ -233,22 +299,65 @@ export default function DashboardPage() {
     };
 
     try {
-      const response = await fetch("/api/movements", {
+      const { response, nextSession } = await authorizedFetch(session, "/api/movements", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload)
       });
+      applyRefreshedSession(nextSession);
+
+      if (response.status === 401) {
+        clearSessionAndGoLogin("Sessao expirada. Faca login novamente.");
+        return;
+      }
 
       if (!response.ok) {
         throw new Error(await getErrorMessage(response, "Falha ao registrar movimentacao."));
       }
 
-      await loadPortfolio();
+      await loadPortfolio(nextSession ?? session);
+      await loadStatement(nextSession ?? session);
       setStatus("Movimentacao registrada com sucesso.");
     } catch (error) {
       setStatus(error instanceof Error ? error.message : "Erro ao registrar movimentacao.");
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function onClearAllEntries() {
+    if (!session) {
+      setStatus("Sessao nao encontrada. Faca login.");
+      return;
+    }
+
+    const confirmed = window.confirm("Tem certeza que deseja apagar todos os lancamentos da carteira e do extrato?");
+    if (!confirmed) {
+      return;
+    }
+
+    setStatus("Limpando lancamentos...");
+
+    try {
+      const { response, nextSession } = await authorizedFetch(session, "/api/statement", {
+        method: "DELETE"
+      });
+      applyRefreshedSession(nextSession);
+
+      if (response.status === 401) {
+        clearSessionAndGoLogin("Sessao expirada. Faca login novamente.");
+        return;
+      }
+
+      if (!response.ok) {
+        throw new Error(await getErrorMessage(response, "Falha ao apagar lancamentos."));
+      }
+
+      await loadPortfolio(nextSession ?? session);
+      await loadStatement(nextSession ?? session);
+      setStatus("Todos os lancamentos foram apagados.");
+    } catch (error) {
+      setStatus(error instanceof Error ? error.message : "Erro ao apagar lancamentos.");
     }
   }
 
@@ -333,7 +442,7 @@ export default function DashboardPage() {
             </button>
             <button
               type="button"
-              onClick={() => loadPortfolio().catch(() => setStatus("Falha ao atualizar carteira."))}
+              onClick={() => session && loadPortfolio(session).catch(() => setStatus("Falha ao atualizar carteira."))}
               disabled={loading}
             >
               Atualizar Carteira
@@ -374,6 +483,26 @@ export default function DashboardPage() {
 
       <section className="card">
         <h2>Extrato de Investimentos</h2>
+        <form onSubmit={onImportSpreadsheets}>
+          <div className="grid">
+            <label>
+              Importar planilhas B3 (.xlsx)
+              <input
+                type="file"
+                accept=".xlsx"
+                multiple
+                onChange={(event) => setImportFiles(Array.from(event.target.files ?? []))}
+              />
+            </label>
+          </div>
+
+          <div className="row-actions">
+            <button type="submit" disabled={importLoading}>
+              {importLoading ? "Importando..." : "Importar Arquivos"}
+            </button>
+          </div>
+        </form>
+
         <form onSubmit={onSubmitStatement}>
           <div className="grid">
             <label>
@@ -395,7 +524,7 @@ export default function DashboardPage() {
               <input
                 value={statementForm.description}
                 onChange={(e) => setStatementForm({ ...statementForm, description: e.target.value })}
-                required
+                placeholder="Opcional"
               />
             </label>
 
@@ -467,6 +596,9 @@ export default function DashboardPage() {
           <div className="row-actions">
             <button type="submit" disabled={statementLoading}>
               {statementLoading ? "Salvando..." : "Adicionar no Extrato"}
+            </button>
+            <button type="button" onClick={onClearAllEntries} disabled={statementLoading || importLoading}>
+              Zerar Lancamentos
             </button>
             <button
               type="button"

@@ -5,10 +5,14 @@ const apiBaseUrl = process.env.DINEX_API_URL ?? "http://localhost:5254";
 export async function POST(request: Request) {
   try {
     const payload = await request.json();
+    const authHeader = request.headers.get("authorization") ?? "";
 
     const response = await fetch(`${apiBaseUrl}/api/movements`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: authHeader
+      },
       body: JSON.stringify(payload),
       cache: "no-store"
     });
