@@ -117,6 +117,28 @@ td {
   gap: 8px;
 }
 
+.portfolio-filters {
+  margin-bottom: 10px;
+}
+
+.badge-warn {
+  margin-left: 8px;
+  border-radius: 999px;
+  padding: 2px 8px;
+  font-size: 11px;
+  background: #fff4d8;
+  color: #8b5e00;
+  border: 1px solid #ffe0a8;
+}
+
+.row-fractional td {
+  background: #fffaf0;
+}
+
+.row-divergent td {
+  background: #fff5f5;
+}
+
 @media (max-width: 720px) {
   .grid {
     grid-template-columns: 1fr;
