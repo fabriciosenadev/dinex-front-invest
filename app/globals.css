@@ -189,6 +189,24 @@ td {
   background: #fff5f5;
 }
 
+.subtable {
+  margin-top: 8px;
+  background: #fbfcff;
+}
+
+.subtable th,
+.subtable td {
+  padding: 6px 8px;
+  font-size: 12px;
+}
+
+details > summary {
+  cursor: pointer;
+  color: #2c4f91;
+  font-size: 12px;
+  margin-top: 6px;
+}
+
 @media (max-width: 720px) {
   .grid {
     grid-template-columns: 1fr;

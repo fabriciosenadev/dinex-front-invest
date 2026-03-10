@@ -7,6 +7,7 @@ import {
   CorporateEventPayload,
   CorporateEventType,
   CurrentUserPayload,
+  IncomeTaxYearSummaryPayload,
   ImportInvestmentsSpreadsheetPayload,
   PortfolioPosition,
   ReconcilePortfolioPayload,
@@ -23,6 +24,7 @@ import { MovementSection } from "./components/MovementSection";
 import { StatementSection } from "./components/StatementSection";
 import { CorporateEventsSection } from "./components/CorporateEventsSection";
 import { PortfolioSection } from "./components/PortfolioSection";
+import { IncomeTaxSection } from "./components/IncomeTaxSection";
 
 type MovementForm = {
   assetSymbol: string;
@@ -101,6 +103,7 @@ export default function DashboardPage() {
   const [statementForm, setStatementForm] = useState<StatementForm>(defaultStatementForm);
   const [corporateEventForm, setCorporateEventForm] = useState<CorporateEventForm>(defaultCorporateEventForm);
   const [positions, setPositions] = useState<PortfolioPosition[]>([]);
+  const [incomeTaxSummary, setIncomeTaxSummary] = useState<IncomeTaxYearSummaryPayload[]>([]);
   const [reconcileResult, setReconcileResult] = useState<ReconcilePortfolioPayload | null>(null);
   const [reconcileFile, setReconcileFile] = useState<File | null>(null);
   const [statementEntries, setStatementEntries] = useState<StatementEntryPayload[]>([]);
@@ -126,6 +129,7 @@ export default function DashboardPage() {
     setSession(null);
     setCurrentUser(null);
     setPositions([]);
+    setIncomeTaxSummary([]);
     setReconcileResult(null);
     setStatementEntries([]);
     setCorporateEvents([]);
@@ -201,6 +205,23 @@ export default function DashboardPage() {
     setCorporateEvents(payload ?? []);
   }
 
+  async function loadIncomeTaxSummary(activeSession: StoredSession) {
+    const { response, nextSession } = await authorizedFetch(activeSession, "/api/movements/portfolio/income-tax-summary", { method: "GET" });
+    applyRefreshedSession(nextSession);
+
+    if (response.status === 401) {
+      clearSessionAndGoLogin("Sessao expirada. Faca login novamente.");
+      return;
+    }
+
+    if (!response.ok) {
+      throw new Error(await getErrorMessage(response, "Falha ao carregar base de IR."));
+    }
+
+    const payload = (await response.json()) as IncomeTaxYearSummaryPayload[];
+    setIncomeTaxSummary(payload ?? []);
+  }
+
   useEffect(() => {
     const stored = readStoredSession();
     if (!stored) {
@@ -213,6 +234,7 @@ export default function DashboardPage() {
       .then(() => loadPortfolio(stored))
       .then(() => loadStatement(stored))
       .then(() => loadCorporateEvents(stored))
+      .then(() => loadIncomeTaxSummary(stored))
       .then(() => setStatus("Pronto."))
       .catch((error) => setStatus(error instanceof Error ? error.message : "Erro ao carregar painel."));
   }, [router]);
@@ -317,6 +339,7 @@ export default function DashboardPage() {
       const payload = (await response.json()) as ImportInvestmentsSpreadsheetPayload;
       await loadPortfolio(nextSession ?? session);
       await loadStatement(nextSession ?? session);
+      await loadIncomeTaxSummary(nextSession ?? session);
       setImportFile(null);
       setStatus(
         `Importacao concluida. Arquivo: ${payload.processedFiles}, linhas: ${payload.totalRowsRead}, ` +
@@ -369,6 +392,7 @@ export default function DashboardPage() {
       const result = (await response.json()) as RegisterCorporateEventResult;
       await loadCorporateEvents(nextSession ?? session);
       await loadPortfolio(nextSession ?? session);
+      await loadIncomeTaxSummary(nextSession ?? session);
       setEditingCorporateEventId(null);
       setCorporateEventForm(defaultCorporateEventForm);
       setStatus(
@@ -429,6 +453,7 @@ export default function DashboardPage() {
 
       await loadCorporateEvents(nextSession ?? session);
       await loadPortfolio(nextSession ?? session);
+      await loadIncomeTaxSummary(nextSession ?? session);
       if (editingCorporateEventId === eventId) {
         onCancelCorporateEventEdit();
       }
@@ -478,6 +503,7 @@ export default function DashboardPage() {
 
       await loadPortfolio(nextSession ?? session);
       await loadStatement(nextSession ?? session);
+      await loadIncomeTaxSummary(nextSession ?? session);
       setStatus("Movimentacao registrada com sucesso.");
     } catch (error) {
       setStatus(error instanceof Error ? error.message : "Erro ao registrar movimentacao.");
@@ -561,6 +587,7 @@ export default function DashboardPage() {
       await loadPortfolio(nextSession ?? session);
       await loadStatement(nextSession ?? session);
       await loadCorporateEvents(nextSession ?? session);
+      await loadIncomeTaxSummary(nextSession ?? session);
       setReconcileResult(null);
       setReconcileFile(null);
       setStatus("Carteira e extrato foram apagados.");
@@ -599,6 +626,7 @@ export default function DashboardPage() {
 
       await loadCorporateEvents(nextSession ?? session);
       await loadPortfolio(nextSession ?? session);
+      await loadIncomeTaxSummary(nextSession ?? session);
       setStatus("Eventos corporativos foram apagados.");
     } catch (error) {
       setStatus(error instanceof Error ? error.message : "Erro ao apagar eventos corporativos.");
@@ -703,6 +731,21 @@ export default function DashboardPage() {
           reconcileLoading={reconcileLoading}
           onReconcile={onReconcilePortfolio}
           onReconcileFileChange={setReconcileFile}
+        />
+      )}
+
+      {activeTab === "income-tax" && (
+        <IncomeTaxSection
+          summary={incomeTaxSummary}
+          onRefresh={async () => {
+            if (!session) {
+              setStatus("Sessao nao encontrada. Faca login.");
+              return;
+            }
+
+            await loadIncomeTaxSummary(session);
+            setStatus("Base de IR atualizada.");
+          }}
         />
       )}
 

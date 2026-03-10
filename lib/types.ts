@@ -21,6 +21,28 @@ export type ReconcilePortfolioPayload = {
   assets: ReconcilePortfolioAssetPayload[];
 };
 
+export type IncomeTaxAssetSummaryPayload = {
+  assetSymbol: string;
+  quantity: number;
+  averagePrice: number;
+  totalCost: number;
+  currency: string;
+};
+
+export type IncomeTaxCompanySummaryPayload = {
+  companyCode: string;
+  totalQuantity: number;
+  consolidatedAveragePrice: number;
+  totalCost: number;
+  currency: string;
+  assets: IncomeTaxAssetSummaryPayload[];
+};
+
+export type IncomeTaxYearSummaryPayload = {
+  year: number;
+  companies: IncomeTaxCompanySummaryPayload[];
+};
+
 export type ErrorResponse = {
   errors: string[];
 };
