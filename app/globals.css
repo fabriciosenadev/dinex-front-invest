@@ -131,6 +131,56 @@ td {
   border: 1px solid #ffe0a8;
 }
 
+.badge-class {
+  display: inline-block;
+  border-radius: 999px;
+  padding: 2px 8px;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.badge-acao {
+  background: #e8f4ff;
+  color: #0f4a85;
+  border: 1px solid #c8e1ff;
+}
+
+.badge-fii {
+  background: #ecfff2;
+  color: #0f6a3f;
+  border: 1px solid #c8f0d8;
+}
+
+.badge-rf {
+  background: #f3ecff;
+  color: #5d2c8d;
+  border: 1px solid #e1cffc;
+}
+
+.badge-direito {
+  background: #fff6e8;
+  color: #925b13;
+  border: 1px solid #ffe2b8;
+}
+
+.badge-etf {
+  background: #e9fbff;
+  color: #126777;
+  border: 1px solid #c4eff8;
+}
+
+.badge-bdr {
+  background: #fff0f6;
+  color: #9a1f5f;
+  border: 1px solid #ffd1e6;
+}
+
+.badge-outro {
+  background: #f2f4f7;
+  color: #4b5565;
+  border: 1px solid #dde3ec;
+}
+
 .row-fractional td {
   background: #fffaf0;
 }

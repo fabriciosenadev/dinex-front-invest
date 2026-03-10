@@ -21,6 +21,7 @@ export function PortfolioSection({
   const [portfolioSearch, setPortfolioSearch] = useState("");
   const [onlyRv, setOnlyRv] = useState(true);
   const [onlyFractional, setOnlyFractional] = useState(false);
+  const [assetClassFilter, setAssetClassFilter] = useState<"all" | AssetClass>("all");
   const [sortBy, setSortBy] = useState<"asset" | "quantity-desc" | "quantity-asc">("asset");
   const [reconcileSearch, setReconcileSearch] = useState("");
   const [onlyDivergent, setOnlyDivergent] = useState(false);
@@ -41,6 +42,11 @@ export function PortfolioSection({
           return false;
         }
 
+        const assetClass = classifyAsset(position.assetSymbol);
+        if (assetClassFilter !== "all" && assetClass !== assetClassFilter) {
+          return false;
+        }
+
         return true;
       })
       .sort((left, right) => {
@@ -58,7 +64,7 @@ export function PortfolioSection({
     const total = filtered.reduce((accumulator, position) => accumulator + position.quantity, 0);
     const fractionalCount = filtered.filter((position) => isFractional(position.quantity)).length;
     return { filtered, total, fractionalCount };
-  }, [positions, portfolioSearch, onlyRv, onlyFractional, sortBy]);
+  }, [positions, portfolioSearch, onlyRv, onlyFractional, assetClassFilter, sortBy]);
 
   const reconcileView = useMemo(() => {
     if (!reconcileResult) {
@@ -97,6 +103,20 @@ export function PortfolioSection({
               <option value="quantity-asc">Quantidade (menor primeiro)</option>
             </select>
           </label>
+
+          <label>
+            Classe
+            <select value={assetClassFilter} onChange={(event) => setAssetClassFilter(event.target.value as "all" | AssetClass)}>
+              <option value="all">Todas</option>
+              <option value="acao">Ação</option>
+              <option value="fii">FII</option>
+              <option value="rf">Renda fixa</option>
+              <option value="direito">Direito</option>
+              <option value="etf">ETF</option>
+              <option value="bdr">BDR</option>
+              <option value="outro">Outro</option>
+            </select>
+          </label>
         </div>
         <div className="inline-actions">
           <button type="button" className={`tab-button ${onlyRv ? "active" : ""}`} onClick={() => setOnlyRv((value) => !value)}>
@@ -118,8 +138,10 @@ export function PortfolioSection({
           <thead>
             <tr>
               <th>Ativo</th>
+              <th>Classe</th>
               <th>Quantidade</th>
               <th>Preco Medio</th>
+              <th>Valor Total</th>
               <th>Moeda</th>
             </tr>
           </thead>
@@ -128,16 +150,20 @@ export function PortfolioSection({
               <tr key={position.assetSymbol} className={isFractional(position.quantity) ? "row-fractional" : undefined}>
                 <td>{position.assetSymbol}</td>
                 <td>
+                  <span className={`badge-class badge-${classifyAsset(position.assetSymbol)}`}>{classifyAssetLabel(position.assetSymbol)}</span>
+                </td>
+                <td>
                   {position.quantity}
                   {isFractional(position.quantity) && <span className="badge-warn">fracionado</span>}
                 </td>
                 <td>{position.averagePrice.toFixed(2)}</td>
+                <td>{formatMoney(position.quantity * position.averagePrice, position.currency)}</td>
                 <td>{position.currency}</td>
               </tr>
             ))}
             {portfolioView.filtered.length === 0 && (
               <tr>
-                <td colSpan={4}>Sem posicoes ainda.</td>
+                <td colSpan={6}>Sem posicoes ainda.</td>
               </tr>
             )}
           </tbody>
@@ -228,4 +254,64 @@ function isLikelyVariableIncome(assetSymbol: string) {
 
 function isFractional(value: number) {
   return Math.abs(value - Math.trunc(value)) > 0.000001;
+}
+
+type AssetClass = "acao" | "fii" | "rf" | "direito" | "etf" | "bdr" | "outro";
+
+const assetClassOverrides: Record<string, AssetClass> = {
+  TAEE11: "acao"
+};
+
+function classifyAsset(assetSymbol: string): AssetClass {
+  const normalized = assetSymbol.trim().toUpperCase();
+  if (assetClassOverrides[normalized]) {
+    return assetClassOverrides[normalized];
+  }
+
+  if (normalized.startsWith("TESOURO") || normalized.startsWith("LCI-") || normalized.startsWith("LCA-") || normalized.startsWith("CDB-")) {
+    return "rf";
+  }
+
+  if (/^[A-Z]{4,5}12$/.test(normalized)) {
+    return "direito";
+  }
+
+  if (/^[A-Z]{4}39$/.test(normalized) || /^[A-Z]{4}11B$/.test(normalized)) {
+    return "etf";
+  }
+
+  if (/^[A-Z]{4}34$/.test(normalized)) {
+    return "bdr";
+  }
+
+  if (/^[A-Z]{4,5}11$/.test(normalized)) {
+    return "fii";
+  }
+
+  if (/^[A-Z]{4,5}[3456]$/.test(normalized)) {
+    return "acao";
+  }
+
+  return "outro";
+}
+
+function classifyAssetLabel(assetSymbol: string): string {
+  const map: Record<AssetClass, string> = {
+    acao: "Ação",
+    fii: "FII",
+    rf: "Renda fixa",
+    direito: "Direito",
+    etf: "ETF",
+    bdr: "BDR",
+    outro: "Outro"
+  };
+  return map[classifyAsset(assetSymbol)];
+}
+
+function formatMoney(value: number, currency: string) {
+  try {
+    return new Intl.NumberFormat("pt-BR", { style: "currency", currency }).format(value);
+  } catch {
+    return value.toFixed(2);
+  }
 }
