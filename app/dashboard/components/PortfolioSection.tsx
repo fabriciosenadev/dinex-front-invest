@@ -156,7 +156,7 @@ export function PortfolioSection({
                   {position.quantity}
                   {isFractional(position.quantity) && <span className="badge-warn">fracionado</span>}
                 </td>
-                <td>{position.averagePrice.toFixed(2)}</td>
+                <td>{formatMoney(position.averagePrice, position.currency)}</td>
                 <td>{formatMoney(position.quantity * position.averagePrice, position.currency)}</td>
                 <td>{position.currency}</td>
               </tr>
