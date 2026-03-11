@@ -12,7 +12,7 @@ type IncomeTaxSectionProps = {
 
 export function IncomeTaxSection({ summary, assetDefinitions, onRefresh }: IncomeTaxSectionProps) {
   const [selectedYear, setSelectedYear] = useState<number | null>(null);
-  const [assetTab, setAssetTab] = useState<"acao" | "fii">("acao");
+  const [assetTab, setAssetTab] = useState<"acao" | "fii" | "etf">("acao");
 
   useEffect(() => {
     if (summary.length === 0) {
@@ -32,6 +32,41 @@ export function IncomeTaxSection({ summary, assetDefinitions, onRefresh }: Incom
 
     return summary.find((item) => item.year === selectedYear) ?? null;
   }, [summary, selectedYear]);
+
+  const availableTabs = useMemo(() => {
+    if (!currentYearSummary) {
+      return [] as Array<"acao" | "fii" | "etf">;
+    }
+
+    const classes = currentYearSummary.companies
+      .flatMap((company) => company.assets)
+      .map((asset) => classifyIncomeTaxAsset(asset.assetSymbol, assetDefinitions));
+
+    const tabs: Array<"acao" | "fii" | "etf"> = [];
+    if (classes.includes("acao")) {
+      tabs.push("acao");
+    }
+
+    if (classes.includes("fii")) {
+      tabs.push("fii");
+    }
+
+    if (classes.includes("etf")) {
+      tabs.push("etf");
+    }
+
+    return tabs;
+  }, [currentYearSummary, assetDefinitions]);
+
+  useEffect(() => {
+    if (availableTabs.length === 0) {
+      return;
+    }
+
+    if (!availableTabs.includes(assetTab)) {
+      setAssetTab(availableTabs[0]);
+    }
+  }, [assetTab, availableTabs]);
 
   const filteredCompanies = useMemo(() => {
     if (!currentYearSummary) {
@@ -61,7 +96,7 @@ export function IncomeTaxSection({ summary, assetDefinitions, onRefresh }: Incom
   }, [currentYearSummary, assetTab, assetDefinitions]);
 
   const totalCost = filteredCompanies.reduce((accumulator, company) => accumulator + company.totalCost, 0);
-  const fiiAssets = useMemo(
+  const nonEquityAssets = useMemo(
     () =>
       filteredCompanies
         .flatMap((company) => company.assets)
@@ -100,19 +135,30 @@ export function IncomeTaxSection({ summary, assetDefinitions, onRefresh }: Incom
         </div>
       )}
 
-      <div className="tabs">
-        <button type="button" className={assetTab === "acao" ? "tab-button active" : "tab-button"} onClick={() => setAssetTab("acao")}>
-          Ações
-        </button>
-        <button type="button" className={assetTab === "fii" ? "tab-button active" : "tab-button"} onClick={() => setAssetTab("fii")}>
-          FIIs
-        </button>
-      </div>
+      {availableTabs.length > 0 && (
+        <div className="tabs">
+          {availableTabs.includes("acao") && (
+            <button type="button" className={assetTab === "acao" ? "tab-button active" : "tab-button"} onClick={() => setAssetTab("acao")}>
+              Ações
+            </button>
+          )}
+          {availableTabs.includes("fii") && (
+            <button type="button" className={assetTab === "fii" ? "tab-button active" : "tab-button"} onClick={() => setAssetTab("fii")}>
+              FIIs
+            </button>
+          )}
+          {availableTabs.includes("etf") && (
+            <button type="button" className={assetTab === "etf" ? "tab-button active" : "tab-button"} onClick={() => setAssetTab("etf")}>
+              ETFs
+            </button>
+          )}
+        </div>
+      )}
 
-      {currentYearSummary !== null && (
+      {currentYearSummary !== null && availableTabs.length > 0 && (
         <>
           <p className="status">
-            {assetTab === "acao" ? `Empresas: ${filteredCompanies.length}` : `Ativos: ${fiiAssets.length}`} | Patrimônio (custo):{" "}
+            {assetTab === "acao" ? `Empresas: ${filteredCompanies.length}` : `Ativos: ${nonEquityAssets.length}`} | Patrimônio (custo):{" "}
             {new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(totalCost)}
           </p>
           <table>
@@ -175,8 +221,8 @@ export function IncomeTaxSection({ summary, assetDefinitions, onRefresh }: Incom
                     <td>{company.currency}</td>
                   </tr>
                 ))}
-              {assetTab === "fii" &&
-                fiiAssets.map((asset) => (
+              {assetTab !== "acao" &&
+                nonEquityAssets.map((asset) => (
                   <tr key={asset.assetSymbol}>
                     <td>{asset.assetSymbol}</td>
                     <td>{asset.quantity}</td>
@@ -195,6 +241,9 @@ export function IncomeTaxSection({ summary, assetDefinitions, onRefresh }: Incom
         </>
       )}
 
+      {currentYearSummary !== null && availableTabs.length === 0 && (
+        <p className="status">Sem ativos classificados como Ações, FIIs ou ETFs no ano selecionado.</p>
+      )}
       {summary.length === 0 && <p className="status">Sem dados de movimentação para montar a base de IR.</p>}
     </section>
   );
@@ -208,7 +257,7 @@ function formatMoney(value: number, currency: string) {
   }
 }
 
-function classifyIncomeTaxAsset(assetSymbol: string, assetDefinitions: AssetDefinitionPayload[]): "acao" | "fii" | "outro" {
+function classifyIncomeTaxAsset(assetSymbol: string, assetDefinitions: AssetDefinitionPayload[]): "acao" | "fii" | "etf" | "outro" {
   const assetClass = classifyAssetWithCatalog(assetSymbol, assetDefinitions);
   if (assetClass === "acao") {
     return "acao";
@@ -216,6 +265,10 @@ function classifyIncomeTaxAsset(assetSymbol: string, assetDefinitions: AssetDefi
 
   if (assetClass === "fii") {
     return "fii";
+  }
+
+  if (assetClass === "etf") {
+    return "etf";
   }
 
   return "outro";
