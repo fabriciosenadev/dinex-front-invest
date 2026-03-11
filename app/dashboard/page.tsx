@@ -125,6 +125,7 @@ export default function DashboardPage() {
   const [corporateEvents, setCorporateEvents] = useState<CorporateEventPayload[]>([]);
   const [assetDefinitions, setAssetDefinitions] = useState<AssetDefinitionPayload[]>([]);
   const [assetCatalogForm, setAssetCatalogForm] = useState<AssetCatalogForm>(defaultAssetCatalogForm);
+  const [editingAssetDefinitionId, setEditingAssetDefinitionId] = useState<string | null>(null);
   const [editingCorporateEventId, setEditingCorporateEventId] = useState<string | null>(null);
   const [importFile, setImportFile] = useState<File | null>(null);
   const [loading, setLoading] = useState(false);
@@ -377,6 +378,7 @@ export default function DashboardPage() {
       await loadPortfolio(nextSession ?? session);
       await loadStatement(nextSession ?? session);
       await loadIncomeTaxSummary(nextSession ?? session);
+      await loadAssetDefinitions(nextSession ?? session);
       setImportFile(null);
       setStatus(
         `Importacao concluida. Arquivo: ${payload.processedFiles}, linhas: ${payload.totalRowsRead}, ` +
@@ -557,7 +559,7 @@ export default function DashboardPage() {
     }
 
     setAssetCatalogLoading(true);
-    setStatus("Salvando cadastro de ativo...");
+    setStatus(editingAssetDefinitionId ? "Atualizando cadastro de ativo..." : "Salvando cadastro de ativo...");
 
     try {
       const payload = {
@@ -566,8 +568,10 @@ export default function DashboardPage() {
         notes: assetCatalogForm.notes || null
       };
 
-      const { response, nextSession } = await authorizedFetch(session, "/api/assets", {
-        method: "POST",
+      const endpoint = editingAssetDefinitionId ? `/api/assets/${editingAssetDefinitionId}` : "/api/assets";
+      const method = editingAssetDefinitionId ? "PUT" : "POST";
+      const { response, nextSession } = await authorizedFetch(session, endpoint, {
+        method,
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload)
       });
@@ -583,12 +587,28 @@ export default function DashboardPage() {
       }
 
       await loadAssetDefinitions(nextSession ?? session);
-      setStatus("Ativo salvo com sucesso.");
+      setEditingAssetDefinitionId(null);
+      setAssetCatalogForm(defaultAssetCatalogForm);
+      setStatus(editingAssetDefinitionId ? "Ativo atualizado com sucesso." : "Ativo salvo com sucesso.");
     } catch (error) {
       setStatus(error instanceof Error ? error.message : "Erro ao salvar ativo.");
     } finally {
       setAssetCatalogLoading(false);
     }
+  }
+
+  function onEditAssetDefinition(asset: AssetDefinitionPayload) {
+    setEditingAssetDefinitionId(asset.id);
+    setAssetCatalogForm({
+      symbol: asset.symbol,
+      type: asset.type,
+      notes: asset.notes ?? ""
+    });
+  }
+
+  function onCancelAssetDefinitionEdit() {
+    setEditingAssetDefinitionId(null);
+    setAssetCatalogForm(defaultAssetCatalogForm);
   }
 
   async function onDeleteAssetDefinition(assetId: string) {
@@ -620,6 +640,9 @@ export default function DashboardPage() {
       }
 
       await loadAssetDefinitions(nextSession ?? session);
+      if (editingAssetDefinitionId === assetId) {
+        onCancelAssetDefinitionEdit();
+      }
       setStatus("Ativo excluido com sucesso.");
     } catch (error) {
       setStatus(error instanceof Error ? error.message : "Erro ao excluir ativo.");
@@ -872,8 +895,11 @@ export default function DashboardPage() {
           form={assetCatalogForm}
           assets={assetDefinitions}
           loading={assetCatalogLoading}
+          editingAssetId={editingAssetDefinitionId}
           onChange={setAssetCatalogForm}
           onSubmit={onSubmitAssetCatalog}
+          onEdit={onEditAssetDefinition}
+          onCancelEdit={onCancelAssetDefinitionEdit}
           onDelete={onDeleteAssetDefinition}
           onRefresh={async () => {
             if (!session) {

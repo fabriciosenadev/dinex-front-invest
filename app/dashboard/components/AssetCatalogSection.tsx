@@ -13,8 +13,11 @@ type AssetCatalogSectionProps = {
   form: AssetCatalogForm;
   assets: AssetDefinitionPayload[];
   loading: boolean;
+  editingAssetId: string | null;
   onChange: (next: AssetCatalogForm) => void;
   onSubmit: (event: FormEvent<HTMLFormElement>) => Promise<void>;
+  onEdit: (asset: AssetDefinitionPayload) => void;
+  onCancelEdit: () => void;
   onDelete: (assetId: string) => Promise<void>;
   onRefresh: () => Promise<void>;
 };
@@ -28,7 +31,18 @@ const assetTypeOptions: Array<{ value: AssetTypePayload; label: string }> = [
   { value: "Other", label: "Outro" }
 ];
 
-export function AssetCatalogSection({ form, assets, loading, onChange, onSubmit, onDelete, onRefresh }: AssetCatalogSectionProps) {
+export function AssetCatalogSection({
+  form,
+  assets,
+  loading,
+  editingAssetId,
+  onChange,
+  onSubmit,
+  onEdit,
+  onCancelEdit,
+  onDelete,
+  onRefresh
+}: AssetCatalogSectionProps) {
   return (
     <section className="card">
       <h2>Cadastro de Ativos</h2>
@@ -58,8 +72,13 @@ export function AssetCatalogSection({ form, assets, loading, onChange, onSubmit,
         </label>
         <div className="full-width row-actions">
           <button type="submit" disabled={loading}>
-            Salvar Ativo
+            {editingAssetId ? "Salvar Edicao" : "Salvar Ativo"}
           </button>
+          {editingAssetId && (
+            <button type="button" onClick={onCancelEdit} disabled={loading}>
+              Cancelar
+            </button>
+          )}
           <button type="button" onClick={onRefresh} disabled={loading}>
             Atualizar Ativos
           </button>
@@ -82,6 +101,9 @@ export function AssetCatalogSection({ form, assets, loading, onChange, onSubmit,
               <td>{mapTypeLabel(asset.type)}</td>
               <td>{asset.notes?.trim() ? asset.notes : "-"}</td>
               <td>
+                <button type="button" onClick={() => onEdit(asset)} disabled={loading}>
+                  Editar
+                </button>
                 <button type="button" onClick={() => onDelete(asset.id)} disabled={loading}>
                   Excluir
                 </button>
