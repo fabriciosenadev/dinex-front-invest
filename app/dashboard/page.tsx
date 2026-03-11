@@ -35,6 +35,7 @@ type MovementForm = {
   quantity: string;
   unitPrice: string;
   currency: string;
+  occurredAt: string;
 };
 
 const defaultForm: MovementForm = {
@@ -42,7 +43,8 @@ const defaultForm: MovementForm = {
   type: "1",
   quantity: "10",
   unitPrice: "32.50",
-  currency: "BRL"
+  currency: "BRL",
+  occurredAt: new Date().toISOString().slice(0, 10)
 };
 
 type StatementForm = {
@@ -135,6 +137,7 @@ export default function DashboardPage() {
   const [assetCatalogLoading, setAssetCatalogLoading] = useState(false);
   const [reconcileLoading, setReconcileLoading] = useState(false);
   const [status, setStatus] = useState("Carregando sessao...");
+  const uiLocked = importLoading;
 
   function applyRefreshedSession(nextSession: StoredSession | null) {
     if (nextSession) {
@@ -520,7 +523,8 @@ export default function DashboardPage() {
       type: Number(form.type),
       quantity: Number(form.quantity),
       unitPrice: Number(form.unitPrice),
-      currency: form.currency
+      currency: form.currency,
+      occurredAtUtc: form.occurredAt ? new Date(`${form.occurredAt}T00:00:00Z`).toISOString() : undefined
     };
 
     try {
@@ -776,145 +780,154 @@ export default function DashboardPage() {
     <main>
       <h1>DinEx Frontend</h1>
       <p>Painel autenticado.</p>
-
-      <UserSessionCard currentUser={currentUser} onLogout={onLogout} />
-      <section className="card">
-        <div className="toolbar">
-          <div>
-            <h2>Zerar dados de investimento</h2>
-            <p className="status">Use os botoes separados para limpar eventos ou carteira/extrato.</p>
+      <fieldset className="dashboard-lock-zone" disabled={uiLocked}>
+        <UserSessionCard currentUser={currentUser} onLogout={onLogout} />
+        <section className="card">
+          <div className="toolbar">
+            <div>
+              <h2>Zerar dados de investimento</h2>
+              <p className="status">Use os botoes separados para limpar eventos ou carteira/extrato.</p>
+            </div>
+            <div className="row-actions">
+              <button type="button" onClick={onClearCorporateEvents} disabled={statementLoading || importLoading || corporateEventLoading}>
+                Zerar Eventos
+              </button>
+              <button type="button" onClick={onClearInvestmentData} disabled={statementLoading || importLoading || corporateEventLoading}>
+                Zerar Carteira/Extrato
+              </button>
+            </div>
           </div>
-          <div className="row-actions">
-            <button type="button" onClick={onClearCorporateEvents} disabled={statementLoading || importLoading || corporateEventLoading}>
-              Zerar Eventos
-            </button>
-            <button type="button" onClick={onClearInvestmentData} disabled={statementLoading || importLoading || corporateEventLoading}>
-              Zerar Carteira/Extrato
-            </button>
-          </div>
-        </div>
-      </section>
-      <TabNavigation activeTab={activeTab} onChange={setActiveTab} />
+        </section>
+        <TabNavigation activeTab={activeTab} onChange={setActiveTab} />
 
-      {activeTab === "movements" && (
-        <MovementSection
-          form={form}
-          loading={loading}
-          status={status}
-          onChange={setForm}
-          onSubmit={onSubmit}
-          onRefresh={async () => {
-            if (!session) {
-              setStatus("Sessao nao encontrada. Faca login.");
-              return;
-            }
-
-            await loadPortfolio(session);
-            setStatus("Carteira atualizada.");
-          }}
-        />
-      )}
-
-      {activeTab === "statement" && (
-        <StatementSection
-          form={statementForm}
-          entries={statementEntries}
-          entryTypeOptions={entryTypeOptions}
-          onChange={setStatementForm}
-          importState={{
-            importLoading,
-            statementLoading,
-            onImport: onImportSpreadsheets,
-            onStatementSubmit: onSubmitStatement,
-            onRefresh: async () => {
+        {activeTab === "movements" && (
+          <MovementSection
+            form={form}
+            loading={loading}
+            status={status}
+            onChange={setForm}
+            onSubmit={onSubmit}
+            onRefresh={async () => {
               if (!session) {
                 setStatus("Sessao nao encontrada. Faca login.");
                 return;
               }
 
-              await loadStatement(session);
-              setStatus("Extrato atualizado.");
-            },
-            onImportFileChange: setImportFile
-          }}
-        />
+              await loadPortfolio(session);
+              setStatus("Carteira atualizada.");
+            }}
+          />
+        )}
+
+        {activeTab === "statement" && (
+          <StatementSection
+            form={statementForm}
+            entries={statementEntries}
+            entryTypeOptions={entryTypeOptions}
+            onChange={setStatementForm}
+            importState={{
+              importLoading,
+              statementLoading,
+              onImport: onImportSpreadsheets,
+              onStatementSubmit: onSubmitStatement,
+              onRefresh: async () => {
+                if (!session) {
+                  setStatus("Sessao nao encontrada. Faca login.");
+                  return;
+                }
+
+                await loadStatement(session);
+                setStatus("Extrato atualizado.");
+              },
+              onImportFileChange: setImportFile
+            }}
+          />
+        )}
+
+        {activeTab === "corporate-events" && (
+          <CorporateEventsSection
+            form={corporateEventForm}
+            events={corporateEvents}
+            loading={corporateEventLoading}
+            editingEventId={editingCorporateEventId}
+            onChange={setCorporateEventForm}
+            onSubmit={onSubmitCorporateEvent}
+            onRefresh={async () => {
+              if (!session) {
+                setStatus("Sessao nao encontrada. Faca login.");
+                return;
+              }
+
+              await loadCorporateEvents(session);
+              setStatus("Eventos corporativos atualizados.");
+            }}
+            onEdit={onEditCorporateEvent}
+            onDelete={onDeleteCorporateEvent}
+            onCancelEdit={onCancelCorporateEventEdit}
+          />
+        )}
+
+        {activeTab === "portfolio" && (
+          <PortfolioSection
+            positions={positions}
+            assetDefinitions={assetDefinitions}
+            reconcileResult={reconcileResult}
+            reconcileLoading={reconcileLoading}
+            onReconcile={onReconcilePortfolio}
+            onReconcileFileChange={setReconcileFile}
+          />
+        )}
+
+        {activeTab === "income-tax" && (
+          <IncomeTaxSection
+            summary={incomeTaxSummary}
+            assetDefinitions={assetDefinitions}
+            statementEntries={statementEntries}
+            onRefresh={async () => {
+              if (!session) {
+                setStatus("Sessao nao encontrada. Faca login.");
+                return;
+              }
+
+              await loadIncomeTaxSummary(session);
+              setStatus("Base de IR atualizada.");
+            }}
+          />
+        )}
+
+        {activeTab === "assets" && (
+          <AssetCatalogSection
+            form={assetCatalogForm}
+            assets={assetDefinitions}
+            loading={assetCatalogLoading}
+            editingAssetId={editingAssetDefinitionId}
+            onChange={setAssetCatalogForm}
+            onSubmit={onSubmitAssetCatalog}
+            onEdit={onEditAssetDefinition}
+            onCancelEdit={onCancelAssetDefinitionEdit}
+            onDelete={onDeleteAssetDefinition}
+            onRefresh={async () => {
+              if (!session) {
+                setStatus("Sessao nao encontrada. Faca login.");
+                return;
+              }
+
+              await loadAssetDefinitions(session);
+              setStatus("Cadastro de ativos atualizado.");
+            }}
+          />
+        )}
+
+        <p className="status">{status}</p>
+      </fieldset>
+      {uiLocked && (
+        <div className="screen-lock" role="status" aria-live="polite">
+          <div className="screen-lock-content">
+            <span className="screen-lock-spinner" aria-hidden="true" />
+            <span>Importacao em andamento. Aguarde a conclusao para continuar.</span>
+          </div>
+        </div>
       )}
-
-      {activeTab === "corporate-events" && (
-        <CorporateEventsSection
-          form={corporateEventForm}
-          events={corporateEvents}
-          loading={corporateEventLoading}
-          editingEventId={editingCorporateEventId}
-          onChange={setCorporateEventForm}
-          onSubmit={onSubmitCorporateEvent}
-          onRefresh={async () => {
-            if (!session) {
-              setStatus("Sessao nao encontrada. Faca login.");
-              return;
-            }
-
-            await loadCorporateEvents(session);
-            setStatus("Eventos corporativos atualizados.");
-          }}
-          onEdit={onEditCorporateEvent}
-          onDelete={onDeleteCorporateEvent}
-          onCancelEdit={onCancelCorporateEventEdit}
-        />
-      )}
-
-      {activeTab === "portfolio" && (
-        <PortfolioSection
-          positions={positions}
-          assetDefinitions={assetDefinitions}
-          reconcileResult={reconcileResult}
-          reconcileLoading={reconcileLoading}
-          onReconcile={onReconcilePortfolio}
-          onReconcileFileChange={setReconcileFile}
-        />
-      )}
-
-      {activeTab === "income-tax" && (
-        <IncomeTaxSection
-          summary={incomeTaxSummary}
-          assetDefinitions={assetDefinitions}
-          statementEntries={statementEntries}
-          onRefresh={async () => {
-            if (!session) {
-              setStatus("Sessao nao encontrada. Faca login.");
-              return;
-            }
-
-            await loadIncomeTaxSummary(session);
-            setStatus("Base de IR atualizada.");
-          }}
-        />
-      )}
-
-      {activeTab === "assets" && (
-        <AssetCatalogSection
-          form={assetCatalogForm}
-          assets={assetDefinitions}
-          loading={assetCatalogLoading}
-          editingAssetId={editingAssetDefinitionId}
-          onChange={setAssetCatalogForm}
-          onSubmit={onSubmitAssetCatalog}
-          onEdit={onEditAssetDefinition}
-          onCancelEdit={onCancelAssetDefinitionEdit}
-          onDelete={onDeleteAssetDefinition}
-          onRefresh={async () => {
-            if (!session) {
-              setStatus("Sessao nao encontrada. Faca login.");
-              return;
-            }
-
-            await loadAssetDefinitions(session);
-            setStatus("Cadastro de ativos atualizado.");
-          }}
-        />
-      )}
-
-      <p className="status">{status}</p>
     </main>
   );
 }

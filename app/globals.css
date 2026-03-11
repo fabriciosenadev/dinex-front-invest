@@ -17,6 +17,55 @@ main {
   max-width: 100%;
   margin: 0 auto;
   padding: 16px 12px 40px;
+  position: relative;
+}
+
+.dashboard-lock-zone {
+  border: 0;
+  margin: 0;
+  padding: 0;
+  min-inline-size: auto;
+}
+
+.screen-lock {
+  position: fixed;
+  inset: 0;
+  background: rgba(10, 19, 38, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  color: #0f1f3d;
+  font-size: 16px;
+  font-weight: 600;
+  padding: 16px;
+  text-align: center;
+}
+
+.screen-lock-content {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  background: #ffffff;
+  border: 1px solid #d8e3f7;
+  border-radius: 12px;
+  padding: 14px 18px;
+  box-shadow: 0 12px 28px rgba(13, 25, 54, 0.2);
+}
+
+.screen-lock-spinner {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 3px solid #d5e2ff;
+  border-top-color: #1f4eea;
+  animation: spin 0.9s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 h1 {

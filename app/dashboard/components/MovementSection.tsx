@@ -8,6 +8,7 @@ type MovementForm = {
   quantity: string;
   unitPrice: string;
   currency: string;
+  occurredAt: string;
 };
 
 type MovementSectionProps = {
@@ -51,6 +52,11 @@ export function MovementSection({ form, loading, status, onChange, onSubmit, onR
           <label>
             Moeda
             <input maxLength={3} value={form.currency} onChange={(e) => onChange({ ...form, currency: e.target.value.toUpperCase() })} required />
+          </label>
+
+          <label>
+            Data da movimentacao
+            <input type="date" value={form.occurredAt} onChange={(e) => onChange({ ...form, occurredAt: e.target.value })} required />
           </label>
         </div>
 
