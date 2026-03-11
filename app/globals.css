@@ -27,6 +27,36 @@
   --lock-text: #0f1f3d;
   --sankey-bg: #fbfdff;
   --sankey-border: #e5ecfa;
+  --sankey-label-color: #17315f;
+  --sankey-tooltip-bg: #ffffff;
+  --sankey-tooltip-text: #162033;
+  --sankey-tooltip-border: #d5e2fb;
+  --badge-warn-bg: #fff4d8;
+  --badge-warn-text: #8b5e00;
+  --badge-warn-border: #ffe0a8;
+  --row-fractional-bg: #fffaf0;
+  --row-divergent-bg: #fff5f5;
+  --badge-acao-bg: #e8f4ff;
+  --badge-acao-text: #0f4a85;
+  --badge-acao-border: #c8e1ff;
+  --badge-fii-bg: #ecfff2;
+  --badge-fii-text: #0f6a3f;
+  --badge-fii-border: #c8f0d8;
+  --badge-rf-bg: #f3ecff;
+  --badge-rf-text: #5d2c8d;
+  --badge-rf-border: #e1cffc;
+  --badge-direito-bg: #fff6e8;
+  --badge-direito-text: #925b13;
+  --badge-direito-border: #ffe2b8;
+  --badge-etf-bg: #e9fbff;
+  --badge-etf-text: #126777;
+  --badge-etf-border: #c4eff8;
+  --badge-bdr-bg: #fff0f6;
+  --badge-bdr-text: #9a1f5f;
+  --badge-bdr-border: #ffd1e6;
+  --badge-outro-bg: #f2f4f7;
+  --badge-outro-text: #4b5565;
+  --badge-outro-border: #dde3ec;
 }
 
 :root[data-theme="dark"] {
@@ -57,6 +87,36 @@
   --lock-text: #f2f6ff;
   --sankey-bg: #16233a;
   --sankey-border: #2c3d5f;
+  --sankey-label-color: #deebff;
+  --sankey-tooltip-bg: #132238;
+  --sankey-tooltip-text: #f1f6ff;
+  --sankey-tooltip-border: #33507a;
+  --badge-warn-bg: #3d2f15;
+  --badge-warn-text: #ffd88a;
+  --badge-warn-border: #7a5d2a;
+  --row-fractional-bg: #2f2a1d;
+  --row-divergent-bg: #3a2024;
+  --badge-acao-bg: #1e3a56;
+  --badge-acao-text: #b9dcff;
+  --badge-acao-border: #35577b;
+  --badge-fii-bg: #1d3d2e;
+  --badge-fii-text: #bdeed3;
+  --badge-fii-border: #35624a;
+  --badge-rf-bg: #35264d;
+  --badge-rf-text: #dbc4ff;
+  --badge-rf-border: #553c7a;
+  --badge-direito-bg: #4a3317;
+  --badge-direito-text: #ffd59d;
+  --badge-direito-border: #7c5a2c;
+  --badge-etf-bg: #1b3f4a;
+  --badge-etf-text: #bdeefa;
+  --badge-etf-border: #326473;
+  --badge-bdr-bg: #472238;
+  --badge-bdr-text: #ffd0e8;
+  --badge-bdr-border: #7a3f61;
+  --badge-outro-bg: #2f3542;
+  --badge-outro-text: #d2dae7;
+  --badge-outro-border: #475164;
 }
 
 * {
@@ -267,9 +327,9 @@ td {
   border-radius: 999px;
   padding: 2px 8px;
   font-size: 11px;
-  background: #fff4d8;
-  color: #8b5e00;
-  border: 1px solid #ffe0a8;
+  background: var(--badge-warn-bg);
+  color: var(--badge-warn-text);
+  border: 1px solid var(--badge-warn-border);
 }
 
 .badge-class {
@@ -281,53 +341,53 @@ td {
 }
 
 .badge-acao {
-  background: #e8f4ff;
-  color: #0f4a85;
-  border: 1px solid #c8e1ff;
+  background: var(--badge-acao-bg);
+  color: var(--badge-acao-text);
+  border: 1px solid var(--badge-acao-border);
 }
 
 .badge-fii {
-  background: #ecfff2;
-  color: #0f6a3f;
-  border: 1px solid #c8f0d8;
+  background: var(--badge-fii-bg);
+  color: var(--badge-fii-text);
+  border: 1px solid var(--badge-fii-border);
 }
 
 .badge-rf {
-  background: #f3ecff;
-  color: #5d2c8d;
-  border: 1px solid #e1cffc;
+  background: var(--badge-rf-bg);
+  color: var(--badge-rf-text);
+  border: 1px solid var(--badge-rf-border);
 }
 
 .badge-direito {
-  background: #fff6e8;
-  color: #925b13;
-  border: 1px solid #ffe2b8;
+  background: var(--badge-direito-bg);
+  color: var(--badge-direito-text);
+  border: 1px solid var(--badge-direito-border);
 }
 
 .badge-etf {
-  background: #e9fbff;
-  color: #126777;
-  border: 1px solid #c4eff8;
+  background: var(--badge-etf-bg);
+  color: var(--badge-etf-text);
+  border: 1px solid var(--badge-etf-border);
 }
 
 .badge-bdr {
-  background: #fff0f6;
-  color: #9a1f5f;
-  border: 1px solid #ffd1e6;
+  background: var(--badge-bdr-bg);
+  color: var(--badge-bdr-text);
+  border: 1px solid var(--badge-bdr-border);
 }
 
 .badge-outro {
-  background: #f2f4f7;
-  color: #4b5565;
-  border: 1px solid #dde3ec;
+  background: var(--badge-outro-bg);
+  color: var(--badge-outro-text);
+  border: 1px solid var(--badge-outro-border);
 }
 
 .row-fractional td {
-  background: #fffaf0;
+  background: var(--row-fractional-bg);
 }
 
 .row-divergent td {
-  background: #fff5f5;
+  background: var(--row-divergent-bg);
 }
 
 .subtable {

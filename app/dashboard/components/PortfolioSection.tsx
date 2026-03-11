@@ -245,18 +245,34 @@ export function PortfolioSection({
               align="justify"
               valueFormat={(value) => `${Number(value).toFixed(2).replace(".", ",")}%`}
               colors={(node) => getClassColor((node as { classLabel?: AssetClass }).classLabel ?? "outro")}
+              theme={{
+                labels: {
+                  text: {
+                    fill: "var(--sankey-label-color)"
+                  }
+                },
+                tooltip: {
+                  container: {
+                    background: "var(--sankey-tooltip-bg)",
+                    color: "var(--sankey-tooltip-text)",
+                    border: "1px solid var(--sankey-tooltip-border)",
+                    borderRadius: "8px",
+                    boxShadow: "0 6px 20px rgba(0, 0, 0, 0.25)"
+                  }
+                }
+              }}
               nodeOpacity={0.95}
               nodeHoverOthersOpacity={0.35}
               nodeThickness={18}
               nodeSpacing={18}
               nodeBorderWidth={0}
-              linkOpacity={0.45}
-              linkHoverOthersOpacity={0.1}
+              linkOpacity={0.72}
+              linkHoverOthersOpacity={0.2}
               enableLinkGradient
               labelPosition="outside"
               labelOrientation="horizontal"
               labelPadding={12}
-              labelTextColor="#17315f"
+              labelTextColor="var(--sankey-label-color)"
             />
           ) : (
             <p className="status">Sem dados suficientes para gerar o Sankey.</p>
