@@ -28,6 +28,7 @@ import { CorporateEventsSection } from "./components/CorporateEventsSection";
 import { PortfolioSection } from "./components/PortfolioSection";
 import { IncomeTaxSection } from "./components/IncomeTaxSection";
 import { AssetCatalogSection } from "./components/AssetCatalogSection";
+type DashboardMode = "simple" | "advanced";
 
 type MovementForm = {
   assetSymbol: string;
@@ -114,6 +115,7 @@ const entryTypeOptions: Array<{ value: StatementEntryType; label: string }> = [
 export default function DashboardPage() {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<DashboardTab>("movements");
+  const [dashboardMode, setDashboardMode] = useState<DashboardMode>("simple");
   const [session, setSession] = useState<StoredSession | null>(null);
   const [currentUser, setCurrentUser] = useState<CurrentUserPayload | null>(null);
   const [form, setForm] = useState<MovementForm>(defaultForm);
@@ -138,6 +140,16 @@ export default function DashboardPage() {
   const [reconcileLoading, setReconcileLoading] = useState(false);
   const [status, setStatus] = useState("Carregando sessao...");
   const uiLocked = importLoading;
+  const primaryTabs: DashboardTab[] =
+    dashboardMode === "advanced"
+      ? ["statement", "movements", "portfolio", "income-tax"]
+      : ["statement", "portfolio", "income-tax"];
+  const secondaryTabs: DashboardTab[] =
+    dashboardMode === "advanced"
+      ? ["corporate-events", "assets"]
+      : ["assets", "corporate-events"];
+  const availableTabs: DashboardTab[] = [...primaryTabs, ...secondaryTabs];
+  const isAdvancedMode = dashboardMode === "advanced";
 
   function applyRefreshedSession(nextSession: StoredSession | null) {
     if (nextSession) {
@@ -279,6 +291,12 @@ export default function DashboardPage() {
       .then(() => setStatus("Pronto."))
       .catch((error) => setStatus(error instanceof Error ? error.message : "Erro ao carregar painel."));
   }, [router]);
+
+  useEffect(() => {
+    if (!availableTabs.includes(activeTab)) {
+      setActiveTab("statement");
+    }
+  }, [activeTab, availableTabs]);
 
   async function onLogout() {
     if (session) {
@@ -781,24 +799,50 @@ export default function DashboardPage() {
       <h1>DinEx Frontend</h1>
       <p>Painel autenticado.</p>
       <fieldset className="dashboard-lock-zone" disabled={uiLocked}>
-        <UserSessionCard currentUser={currentUser} onLogout={onLogout} />
         <section className="card">
           <div className="toolbar">
             <div>
-              <h2>Zerar dados de investimento</h2>
-              <p className="status">Use os botoes separados para limpar eventos ou carteira/extrato.</p>
+              <h2>Modo de uso</h2>
+              <p className="status">Simples para uso diário. Avançado para manutenção e lançamentos técnicos.</p>
             </div>
-            <div className="row-actions">
-              <button type="button" onClick={onClearCorporateEvents} disabled={statementLoading || importLoading || corporateEventLoading}>
-                Zerar Eventos
+            <div className="inline-actions">
+              <button
+                type="button"
+                className={dashboardMode === "simple" ? "tab-button active" : "tab-button"}
+                onClick={() => setDashboardMode("simple")}
+              >
+                Modo Simples
               </button>
-              <button type="button" onClick={onClearInvestmentData} disabled={statementLoading || importLoading || corporateEventLoading}>
-                Zerar Carteira/Extrato
+              <button
+                type="button"
+                className={dashboardMode === "advanced" ? "tab-button active" : "tab-button"}
+                onClick={() => setDashboardMode("advanced")}
+              >
+                Modo Avançado
               </button>
             </div>
           </div>
         </section>
-        <TabNavigation activeTab={activeTab} onChange={setActiveTab} />
+        <UserSessionCard currentUser={currentUser} onLogout={onLogout} />
+        {isAdvancedMode && (
+          <section className="card">
+            <div className="toolbar">
+              <div>
+                <h2>Zerar dados de investimento</h2>
+                <p className="status">Use os botoes separados para limpar eventos ou carteira/extrato.</p>
+              </div>
+              <div className="row-actions">
+                <button type="button" onClick={onClearCorporateEvents} disabled={statementLoading || importLoading || corporateEventLoading}>
+                  Zerar Eventos
+                </button>
+                <button type="button" onClick={onClearInvestmentData} disabled={statementLoading || importLoading || corporateEventLoading}>
+                  Zerar Carteira/Extrato
+                </button>
+              </div>
+            </div>
+          </section>
+        )}
+        <TabNavigation activeTab={activeTab} onChange={setActiveTab} primaryTabs={primaryTabs} secondaryTabs={secondaryTabs} />
 
         {activeTab === "movements" && (
           <MovementSection
@@ -825,6 +869,7 @@ export default function DashboardPage() {
             entries={statementEntries}
             entryTypeOptions={entryTypeOptions}
             onChange={setStatementForm}
+            showManualEntry={isAdvancedMode}
             importState={{
               importLoading,
               statementLoading,
@@ -875,6 +920,7 @@ export default function DashboardPage() {
             reconcileLoading={reconcileLoading}
             onReconcile={onReconcilePortfolio}
             onReconcileFileChange={setReconcileFile}
+            showReconcile={isAdvancedMode}
           />
         )}
 

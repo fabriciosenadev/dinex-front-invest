@@ -155,6 +155,22 @@ td {
   padding-bottom: 4px;
 }
 
+.tab-nav {
+  display: grid;
+  gap: 10px;
+}
+
+.tabs-primary .tab-button {
+  background: #dfe9ff;
+  color: #123f8f;
+  font-weight: 600;
+}
+
+.tabs-secondary .tab-button {
+  background: #f1f4fb;
+  color: #3f516f;
+}
+
 .tab-button {
   background: #e8eefc;
   color: #17315f;

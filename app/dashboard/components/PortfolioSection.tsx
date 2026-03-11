@@ -11,6 +11,7 @@ type PortfolioSectionProps = {
   reconcileLoading: boolean;
   onReconcile: (event: FormEvent<HTMLFormElement>) => Promise<void>;
   onReconcileFileChange: (file: File | null) => void;
+  showReconcile?: boolean;
 };
 
 export function PortfolioSection({
@@ -19,7 +20,8 @@ export function PortfolioSection({
   reconcileResult,
   reconcileLoading,
   onReconcile,
-  onReconcileFileChange
+  onReconcileFileChange,
+  showReconcile = true
 }: PortfolioSectionProps) {
   const [portfolioSearch, setPortfolioSearch] = useState("");
   const [onlyRv, setOnlyRv] = useState(true);
@@ -175,79 +177,81 @@ export function PortfolioSection({
         </table>
       </section>
 
-      <section className="card">
-        <h2>Reconciliação com relatório de posição</h2>
-        <form onSubmit={onReconcile}>
-          <div className="grid">
-            <label>
-              Relatório consolidado (.xlsx)
-              <input
-                type="file"
-                accept=".xlsx"
-                onChange={(event) => onReconcileFileChange(event.currentTarget.files?.[0] ?? null)}
-              />
-            </label>
-          </div>
-          <div className="row-actions">
-            <button type="submit" disabled={reconcileLoading}>
-              {reconcileLoading ? "Reconciliando..." : "Reconciliar Carteira"}
-            </button>
-          </div>
-        </form>
-
-        {reconcileResult && (
-          <>
-            <p className="status">
-              Ativos: {reconcileResult.totalAssets} | OK: {reconcileResult.matchedAssets} | Divergentes:{" "}
-              {reconcileResult.divergentAssets}
-            </p>
-            <div className="grid portfolio-filters">
+      {showReconcile && (
+        <section className="card">
+          <h2>Reconciliação com relatório de posição</h2>
+          <form onSubmit={onReconcile}>
+            <div className="grid">
               <label>
-                Buscar no resultado
-                <input value={reconcileSearch} onChange={(event) => setReconcileSearch(event.target.value)} placeholder="Ex.: KLBN4" />
+                Relatório consolidado (.xlsx)
+                <input
+                  type="file"
+                  accept=".xlsx"
+                  onChange={(event) => onReconcileFileChange(event.currentTarget.files?.[0] ?? null)}
+                />
               </label>
             </div>
-            <div className="inline-actions">
-              <button
-                type="button"
-                className={`tab-button ${onlyDivergent ? "active" : ""}`}
-                onClick={() => setOnlyDivergent((value) => !value)}
-              >
-                {onlyDivergent ? "Somente divergentes" : "Todos os resultados"}
+            <div className="row-actions">
+              <button type="submit" disabled={reconcileLoading}>
+                {reconcileLoading ? "Reconciliando..." : "Reconciliar Carteira"}
               </button>
             </div>
-            <table>
-              <thead>
-                <tr>
-                  <th>Ativo</th>
-                  <th>Esperado</th>
-                  <th>Atual</th>
-                  <th>Diferença</th>
-                  <th>Status</th>
-                  <th>Motivo</th>
-                </tr>
-              </thead>
-              <tbody>
-                {reconcileView.map((asset) => (
-                  <tr key={asset.assetSymbol} className={asset.status !== "OK" ? "row-divergent" : undefined}>
-                    <td>{asset.assetSymbol}</td>
-                    <td>{asset.expectedQuantity}</td>
-                    <td>{asset.currentQuantity}</td>
-                    <td>{asset.difference}</td>
-                    <td>{asset.status}</td>
-                    <td>{asset.reason}</td>
-                  </tr>
-                ))}
-                {reconcileView.length === 0 && (
+          </form>
+
+          {reconcileResult && (
+            <>
+              <p className="status">
+                Ativos: {reconcileResult.totalAssets} | OK: {reconcileResult.matchedAssets} | Divergentes:{" "}
+                {reconcileResult.divergentAssets}
+              </p>
+              <div className="grid portfolio-filters">
+                <label>
+                  Buscar no resultado
+                  <input value={reconcileSearch} onChange={(event) => setReconcileSearch(event.target.value)} placeholder="Ex.: KLBN4" />
+                </label>
+              </div>
+              <div className="inline-actions">
+                <button
+                  type="button"
+                  className={`tab-button ${onlyDivergent ? "active" : ""}`}
+                  onClick={() => setOnlyDivergent((value) => !value)}
+                >
+                  {onlyDivergent ? "Somente divergentes" : "Todos os resultados"}
+                </button>
+              </div>
+              <table>
+                <thead>
                   <tr>
-                    <td colSpan={6}>Nenhum resultado para o filtro selecionado.</td>
+                    <th>Ativo</th>
+                    <th>Esperado</th>
+                    <th>Atual</th>
+                    <th>Diferença</th>
+                    <th>Status</th>
+                    <th>Motivo</th>
                   </tr>
-                )}
-              </tbody>
-            </table>
-          </>
-        )}
-      </section>
+                </thead>
+                <tbody>
+                  {reconcileView.map((asset) => (
+                    <tr key={asset.assetSymbol} className={asset.status !== "OK" ? "row-divergent" : undefined}>
+                      <td>{asset.assetSymbol}</td>
+                      <td>{asset.expectedQuantity}</td>
+                      <td>{asset.currentQuantity}</td>
+                      <td>{asset.difference}</td>
+                      <td>{asset.status}</td>
+                      <td>{asset.reason}</td>
+                    </tr>
+                  ))}
+                  {reconcileView.length === 0 && (
+                    <tr>
+                      <td colSpan={6}>Nenhum resultado para o filtro selecionado.</td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </>
+          )}
+        </section>
+      )}
     </>
   );
 }

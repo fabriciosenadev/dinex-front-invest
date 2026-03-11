@@ -30,9 +30,10 @@ type StatementSectionProps = {
   entryTypeOptions: Array<{ value: StatementEntryType; label: string }>;
   onChange: (next: StatementForm) => void;
   importState: ImportFormState;
+  showManualEntry?: boolean;
 };
 
-export function StatementSection({ form, entries, entryTypeOptions, onChange, importState }: StatementSectionProps) {
+export function StatementSection({ form, entries, entryTypeOptions, onChange, importState, showManualEntry = true }: StatementSectionProps) {
   function getEntryTypeLabel(type: StatementEntryType) {
     const option = entryTypeOptions.find((x) => x.value === type);
     return option?.label ?? type;
@@ -56,64 +57,66 @@ export function StatementSection({ form, entries, entryTypeOptions, onChange, im
         </div>
       </form>
 
-      <form onSubmit={importState.onStatementSubmit}>
-        <div className="grid">
-          <label>
-            Tipo de lancamento
-            <select value={form.type} onChange={(e) => onChange({ ...form, type: e.target.value as StatementEntryType })}>
-              {entryTypeOptions.map((option) => (
-                <option key={option.value} value={option.value}>
-                  {option.label}
-                </option>
-              ))}
-            </select>
-          </label>
+      {showManualEntry && (
+        <form onSubmit={importState.onStatementSubmit}>
+          <div className="grid">
+            <label>
+              Tipo de lancamento
+              <select value={form.type} onChange={(e) => onChange({ ...form, type: e.target.value as StatementEntryType })}>
+                {entryTypeOptions.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+            </label>
 
-          <label>
-            Descricao
-            <input value={form.description} onChange={(e) => onChange({ ...form, description: e.target.value })} placeholder="Opcional" />
-          </label>
+            <label>
+              Descricao
+              <input value={form.description} onChange={(e) => onChange({ ...form, description: e.target.value })} placeholder="Opcional" />
+            </label>
 
-          <label>
-            Ativo (opcional)
-            <input value={form.assetSymbol} onChange={(e) => onChange({ ...form, assetSymbol: e.target.value.toUpperCase() })} />
-          </label>
+            <label>
+              Ativo (opcional)
+              <input value={form.assetSymbol} onChange={(e) => onChange({ ...form, assetSymbol: e.target.value.toUpperCase() })} />
+            </label>
 
-          <label>
-            Quantidade (opcional)
-            <input type="number" min="0.0001" step="0.0001" value={form.quantity} onChange={(e) => onChange({ ...form, quantity: e.target.value })} />
-          </label>
+            <label>
+              Quantidade (opcional)
+              <input type="number" min="0.0001" step="0.0001" value={form.quantity} onChange={(e) => onChange({ ...form, quantity: e.target.value })} />
+            </label>
 
-          <label>
-            Preco unitario (opcional)
-            <input type="number" min="0.0001" step="0.0001" value={form.unitPriceAmount} onChange={(e) => onChange({ ...form, unitPriceAmount: e.target.value })} />
-          </label>
+            <label>
+              Preco unitario (opcional)
+              <input type="number" min="0.0001" step="0.0001" value={form.unitPriceAmount} onChange={(e) => onChange({ ...form, unitPriceAmount: e.target.value })} />
+            </label>
 
-          <label>
-            Valor bruto
-            <input type="number" min="0" step="0.0001" value={form.grossAmount} onChange={(e) => onChange({ ...form, grossAmount: e.target.value })} required />
-          </label>
+            <label>
+              Valor bruto
+              <input type="number" min="0" step="0.0001" value={form.grossAmount} onChange={(e) => onChange({ ...form, grossAmount: e.target.value })} required />
+            </label>
 
-          <label>
-            Valor liquido
-            <input type="number" min="0" step="0.0001" value={form.netAmount} onChange={(e) => onChange({ ...form, netAmount: e.target.value })} required />
-          </label>
+            <label>
+              Valor liquido
+              <input type="number" min="0" step="0.0001" value={form.netAmount} onChange={(e) => onChange({ ...form, netAmount: e.target.value })} required />
+            </label>
 
-          <label>
-            Moeda
-            <input maxLength={3} value={form.currency} onChange={(e) => onChange({ ...form, currency: e.target.value.toUpperCase() })} required />
-          </label>
-        </div>
+            <label>
+              Moeda
+              <input maxLength={3} value={form.currency} onChange={(e) => onChange({ ...form, currency: e.target.value.toUpperCase() })} required />
+            </label>
+          </div>
 
-        <div className="row-actions">
-          <button type="submit" disabled={importState.statementLoading}>
-            {importState.statementLoading ? "Salvando..." : "Adicionar no Extrato"}
-          </button>
-          <button type="button" onClick={importState.onRefresh} disabled={importState.statementLoading}>
-            Atualizar Extrato
-          </button>
-        </div>
-      </form>
+          <div className="row-actions">
+            <button type="submit" disabled={importState.statementLoading}>
+              {importState.statementLoading ? "Salvando..." : "Adicionar no Extrato"}
+            </button>
+            <button type="button" onClick={importState.onRefresh} disabled={importState.statementLoading}>
+              Atualizar Extrato
+            </button>
+          </div>
+        </form>
+      )}
 
       <table>
         <thead>
