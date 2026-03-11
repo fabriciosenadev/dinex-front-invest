@@ -103,6 +103,7 @@ button {
   font-size: 14px;
 }
 
+
 button {
   background: #1f4eea;
   color: #fff;
@@ -185,6 +186,15 @@ td {
   display: flex;
   gap: 8px;
   flex-wrap: wrap;
+}
+
+.sankey-chart-wrap {
+  width: 100%;
+  height: 440px;
+  margin-top: 8px;
+  border: 1px solid #e5ecfa;
+  border-radius: 10px;
+  background: #fbfdff;
 }
 
 .portfolio-filters {
@@ -307,5 +317,9 @@ details > summary {
     flex-wrap: wrap;
     overflow-x: visible;
     padding-bottom: 0;
+  }
+
+  .sankey-chart-wrap {
+    height: 520px;
   }
 }

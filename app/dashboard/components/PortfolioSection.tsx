@@ -1,6 +1,7 @@
 "use client";
 
 import { FormEvent, useMemo, useState } from "react";
+import { ResponsiveSankey } from "@nivo/sankey";
 import { classifyAssetWithCatalog, AssetClass } from "../../../lib/assetClassification";
 import { AssetDefinitionPayload, PortfolioPosition, ReconcilePortfolioPayload } from "../../../lib/types";
 
@@ -90,6 +91,62 @@ export function PortfolioSection({
     });
   }, [reconcileResult, reconcileSearch, onlyDivergent]);
 
+  const sankeyData = useMemo(() => {
+    const source = portfolioView.filtered;
+    if (source.length === 0) {
+      return { nodes: [], links: [] };
+    }
+
+    const totalValue = source.reduce((acc, position) => acc + (position.quantity * position.averagePrice), 0);
+    if (totalValue <= 0) {
+      return { nodes: [], links: [] };
+    }
+
+    const nodes = [{ id: "Carteira", classLabel: "outro" as AssetClass }];
+    const links: Array<{ source: string; target: string; value: number }> = [];
+    const classNodeIds = new Set<string>();
+    const assetNodeIds = new Set<string>();
+
+    for (const position of source) {
+      const value = position.quantity * position.averagePrice;
+      if (value <= 0) {
+        continue;
+      }
+
+      const classLabel = classifyAssetLabel(position.assetSymbol, assetDefinitions);
+      const classKey = `classe:${classLabel}`;
+      const assetKey = `ativo:${position.assetSymbol}`;
+      const assetClass = classifyAsset(position.assetSymbol, assetDefinitions);
+
+      if (!classNodeIds.has(classKey)) {
+        classNodeIds.add(classKey);
+        nodes.push({ id: classKey, classLabel: assetClass });
+      }
+
+      if (!assetNodeIds.has(assetKey)) {
+        assetNodeIds.add(assetKey);
+        nodes.push({ id: assetKey, classLabel: assetClass });
+      }
+
+      links.push({ source: classKey, target: assetKey, value: toPercent(value, totalValue) });
+    }
+
+    const classTotals = new Map<string, number>();
+    for (const link of links) {
+      if (!link.source.startsWith("classe:")) {
+        continue;
+      }
+
+      classTotals.set(link.source, (classTotals.get(link.source) ?? 0) + link.value);
+    }
+
+    for (const [classKey, total] of classTotals.entries()) {
+      links.push({ source: "Carteira", target: classKey, value: total });
+    }
+
+    return { nodes, links };
+  }, [portfolioView.filtered, assetDefinitions]);
+
   return (
     <>
       <section className="card">
@@ -177,6 +234,36 @@ export function PortfolioSection({
         </table>
       </section>
 
+      <section className="card">
+        <h2>Sankey da Carteira</h2>
+        <p className="status">Proporção percentual (100%) por classe e ativo com base no filtro atual.</p>
+        <div className="sankey-chart-wrap">
+          {sankeyData.links.length > 0 ? (
+            <ResponsiveSankey
+              data={sankeyData}
+              margin={{ top: 20, right: 140, bottom: 20, left: 20 }}
+              align="justify"
+              valueFormat={(value) => `${Number(value).toFixed(2).replace(".", ",")}%`}
+              colors={(node) => getClassColor((node as { classLabel?: AssetClass }).classLabel ?? "outro")}
+              nodeOpacity={0.95}
+              nodeHoverOthersOpacity={0.35}
+              nodeThickness={18}
+              nodeSpacing={18}
+              nodeBorderWidth={0}
+              linkOpacity={0.45}
+              linkHoverOthersOpacity={0.1}
+              enableLinkGradient
+              labelPosition="outside"
+              labelOrientation="horizontal"
+              labelPadding={12}
+              labelTextColor="#17315f"
+            />
+          ) : (
+            <p className="status">Sem dados suficientes para gerar o Sankey.</p>
+          )}
+        </div>
+      </section>
+
       {showReconcile && (
         <section className="card">
           <h2>Reconciliação com relatório de posição</h2>
@@ -254,6 +341,32 @@ export function PortfolioSection({
       )}
     </>
   );
+}
+
+function toSankeyValue(value: number) {
+  return value.toFixed(2);
+}
+
+function toPercent(value: number, total: number) {
+  if (total <= 0) {
+    return 0;
+  }
+
+  return (value / total) * 100;
+}
+
+function getClassColor(assetClass: AssetClass) {
+  const colors: Record<AssetClass, string> = {
+    acao: "#1f77b4",
+    fii: "#2ca02c",
+    rf: "#9467bd",
+    direito: "#ff7f0e",
+    etf: "#17becf",
+    bdr: "#e377c2",
+    outro: "#7f7f7f"
+  };
+
+  return colors[assetClass];
 }
 
 function isLikelyVariableIncome(assetSymbol: string) {
