@@ -2,15 +2,16 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { classifyAssetWithCatalog } from "../../../lib/assetClassification";
-import { AssetDefinitionPayload, IncomeTaxYearSummaryPayload } from "../../../lib/types";
+import { AssetDefinitionPayload, IncomeTaxYearSummaryPayload, StatementEntryPayload } from "../../../lib/types";
 
 type IncomeTaxSectionProps = {
   summary: IncomeTaxYearSummaryPayload[];
   assetDefinitions: AssetDefinitionPayload[];
+  statementEntries: StatementEntryPayload[];
   onRefresh: () => Promise<void>;
 };
 
-export function IncomeTaxSection({ summary, assetDefinitions, onRefresh }: IncomeTaxSectionProps) {
+export function IncomeTaxSection({ summary, assetDefinitions, statementEntries, onRefresh }: IncomeTaxSectionProps) {
   const [selectedYear, setSelectedYear] = useState<number | null>(null);
   const [assetTab, setAssetTab] = useState<"acao" | "fii" | "etf">("acao");
 
@@ -103,6 +104,84 @@ export function IncomeTaxSection({ summary, assetDefinitions, onRefresh }: Incom
         .sort((left, right) => left.assetSymbol.localeCompare(right.assetSymbol, "pt-BR")),
     [filteredCompanies]
   );
+  const incomeByAssetAndType = useMemo(() => {
+    if (selectedYear === null) {
+      return [];
+    }
+
+    const accumulator = new Map<string, { assetSymbol: string; eventType: string; currency: string; totalNetAmount: number; entriesCount: number; assetClass: "acao" | "fii" | "etf" | "outro" }>();
+    for (const entry of statementEntries) {
+      const year = new Date(entry.occurredAtUtc).getUTCFullYear();
+      if (year !== selectedYear || !isReceivedIncomeDescription(entry.description)) {
+        continue;
+      }
+
+      const assetSymbol = (entry.assetSymbol ?? "-").trim().toUpperCase();
+      const eventType = resolveIncomeEventType(entry.description);
+      const entryClass = assetSymbol === "-" ? "outro" : classifyIncomeTaxAsset(assetSymbol, assetDefinitions);
+      const key = `${assetSymbol}|${eventType}|${entry.currency}|${entryClass}`;
+      const current = accumulator.get(key);
+      if (!current) {
+        accumulator.set(key, {
+          assetSymbol,
+          eventType,
+          currency: entry.currency,
+          totalNetAmount: entry.netAmount,
+          entriesCount: 1,
+          assetClass: entryClass
+        });
+      } else {
+        current.totalNetAmount += entry.netAmount;
+        current.entriesCount += 1;
+      }
+    }
+
+    return Array.from(accumulator.values()).sort((left, right) => {
+      const byAsset = left.assetSymbol.localeCompare(right.assetSymbol, "pt-BR");
+      if (byAsset !== 0) {
+        return byAsset;
+      }
+
+      return left.eventType.localeCompare(right.eventType, "pt-BR");
+    });
+  }, [selectedYear, statementEntries, assetDefinitions]);
+  const incomeByAssetAndTypeForTab = useMemo(() => incomeByAssetAndType.filter((row) => row.assetClass === assetTab), [incomeByAssetAndType, assetTab]);
+  const incomeByAsset = useMemo(() => {
+    const accumulator = new Map<string, { dividend: number; jcp: number; rendimento: number; totalWithoutJcp: number; entriesCount: number }>();
+    for (const row of incomeByAssetAndTypeForTab) {
+      const key = row.assetSymbol;
+      const event = normalizeIncomeEventType(row.eventType);
+      const current = accumulator.get(key) ?? { dividend: 0, jcp: 0, rendimento: 0, totalWithoutJcp: 0, entriesCount: 0 };
+      if (event === "dividend") {
+        current.dividend += row.totalNetAmount;
+        current.totalWithoutJcp += row.totalNetAmount;
+      } else if (event === "jcp") {
+        current.jcp += row.totalNetAmount;
+      } else {
+        current.rendimento += row.totalNetAmount;
+        current.totalWithoutJcp += row.totalNetAmount;
+      }
+
+      current.entriesCount += row.entriesCount;
+      accumulator.set(key, current);
+    }
+
+    return accumulator;
+  }, [incomeByAssetAndTypeForTab]);
+  const receivedIncomeTotalWithoutJcp = Array.from(incomeByAsset.values()).reduce((accumulator, row) => accumulator + row.totalWithoutJcp, 0);
+  const receivedJcpTotal = Array.from(incomeByAsset.values()).reduce((accumulator, row) => accumulator + row.jcp, 0);
+  const receivedIncomeEntriesCount = Array.from(incomeByAsset.values()).reduce((accumulator, row) => accumulator + row.entriesCount, 0);
+  const transferredEntries = useMemo(() => {
+    if (selectedYear === null) {
+      return [];
+    }
+
+    return statementEntries.filter((entry) => {
+      const year = new Date(entry.occurredAtUtc).getUTCFullYear();
+      return year === selectedYear && isTransferredIncomeDescription(entry.description);
+    });
+  }, [selectedYear, statementEntries]);
+  const transferredEntriesTotal = transferredEntries.reduce((accumulator, entry) => accumulator + entry.netAmount, 0);
 
   return (
     <section className="card">
@@ -158,6 +237,17 @@ export function IncomeTaxSection({ summary, assetDefinitions, onRefresh }: Incom
       {currentYearSummary !== null && availableTabs.length > 0 && (
         <>
           <p className="status">
+            Proventos recebidos (sem transferidos): {receivedIncomeEntriesCount} lançamentos | Div+Rend:{" "}
+            {new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(receivedIncomeTotalWithoutJcp)} | JCP:{" "}
+            {new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(receivedJcpTotal)}
+          </p>
+          {transferredEntries.length > 0 && (
+            <p className="status">
+              Transferidos desconsiderados no ano: {transferredEntries.length} | Total:{" "}
+              {new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(transferredEntriesTotal)}
+            </p>
+          )}
+          <p className="status">
             {assetTab === "acao" ? `Empresas: ${filteredCompanies.length}` : `Ativos: ${nonEquityAssets.length}`} | Patrimônio (custo):{" "}
             {new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(totalCost)}
           </p>
@@ -170,6 +260,10 @@ export function IncomeTaxSection({ summary, assetDefinitions, onRefresh }: Incom
                   <th>Quantidade Total</th>
                   <th>Preço Médio Consolidado</th>
                   <th>Valor Total</th>
+                  <th>Dividendos</th>
+                  <th>JCP</th>
+                  <th>Rendimento</th>
+                  <th>Total Div+Rend</th>
                   <th>Moeda</th>
                 </tr>
               ) : (
@@ -178,6 +272,10 @@ export function IncomeTaxSection({ summary, assetDefinitions, onRefresh }: Incom
                   <th>Quantidade</th>
                   <th>Preço Médio</th>
                   <th>Valor Total</th>
+                  <th>Dividendos</th>
+                  <th>JCP</th>
+                  <th>Rendimento</th>
+                  <th>Total Div+Rend</th>
                   <th>Moeda</th>
                 </tr>
               )}
@@ -218,6 +316,10 @@ export function IncomeTaxSection({ summary, assetDefinitions, onRefresh }: Incom
                     <td>{company.totalQuantity}</td>
                     <td>{formatMoney(company.consolidatedAveragePrice, company.currency)}</td>
                     <td>{formatMoney(company.totalCost, company.currency)}</td>
+                    <td>{formatMoney(company.assets.reduce((sum, asset) => sum + (incomeByAsset.get(asset.assetSymbol)?.dividend ?? 0), 0), company.currency)}</td>
+                    <td>{formatMoney(company.assets.reduce((sum, asset) => sum + (incomeByAsset.get(asset.assetSymbol)?.jcp ?? 0), 0), company.currency)}</td>
+                    <td>{formatMoney(company.assets.reduce((sum, asset) => sum + (incomeByAsset.get(asset.assetSymbol)?.rendimento ?? 0), 0), company.currency)}</td>
+                    <td>{formatMoney(company.assets.reduce((sum, asset) => sum + (incomeByAsset.get(asset.assetSymbol)?.totalWithoutJcp ?? 0), 0), company.currency)}</td>
                     <td>{company.currency}</td>
                   </tr>
                 ))}
@@ -228,12 +330,16 @@ export function IncomeTaxSection({ summary, assetDefinitions, onRefresh }: Incom
                     <td>{asset.quantity}</td>
                     <td>{formatMoney(asset.averagePrice, asset.currency)}</td>
                     <td>{formatMoney(asset.totalCost, asset.currency)}</td>
+                    <td>{formatMoney((incomeByAsset.get(asset.assetSymbol)?.dividend ?? 0), asset.currency)}</td>
+                    <td>{formatMoney((incomeByAsset.get(asset.assetSymbol)?.jcp ?? 0), asset.currency)}</td>
+                    <td>{formatMoney((incomeByAsset.get(asset.assetSymbol)?.rendimento ?? 0), asset.currency)}</td>
+                    <td>{formatMoney((incomeByAsset.get(asset.assetSymbol)?.totalWithoutJcp ?? 0), asset.currency)}</td>
                     <td>{asset.currency}</td>
                   </tr>
                 ))}
               {filteredCompanies.length === 0 && (
                 <tr>
-                  <td colSpan={assetTab === "acao" ? 6 : 5}>Sem ativos dessa classe no ano selecionado.</td>
+                  <td colSpan={assetTab === "acao" ? 10 : 9}>Sem ativos dessa classe no ano selecionado.</td>
                 </tr>
               )}
             </tbody>
@@ -272,4 +378,64 @@ function classifyIncomeTaxAsset(assetSymbol: string, assetDefinitions: AssetDefi
   }
 
   return "outro";
+}
+
+function isTransferredIncomeDescription(description: string): boolean {
+  const normalized = description.trim().toLowerCase();
+  return (
+    normalized.includes("dividendo - transferido") ||
+    normalized.includes("juros sobre capital próprio - transferido") ||
+    normalized.includes("juros sobre capital proprio - transferido") ||
+    normalized.includes("rendimento - transferido")
+  );
+}
+
+function isReceivedIncomeDescription(description: string): boolean {
+  const normalized = description.trim().toLowerCase();
+  if (isTransferredIncomeDescription(description)) {
+    return false;
+  }
+
+  return (
+    normalized.includes("dividendo") ||
+    normalized.includes("juros sobre capital próprio") ||
+    normalized.includes("juros sobre capital proprio") ||
+    normalized.includes("jcp") ||
+    normalized.includes("rendimento") ||
+    normalized.includes("provento")
+  );
+}
+
+function resolveIncomeEventType(description: string): string {
+  const normalized = description.trim().toLowerCase();
+  if (normalized.includes("juros sobre capital próprio") || normalized.includes("juros sobre capital proprio") || normalized.includes("jcp")) {
+    return "Juros Sobre Capital Próprio";
+  }
+
+  if (normalized.includes("dividendo")) {
+    return "Dividendo";
+  }
+
+  if (normalized.includes("rendimento")) {
+    return "Rendimento";
+  }
+
+  if (normalized.includes("provento")) {
+    return "Provento";
+  }
+
+  return description;
+}
+
+function normalizeIncomeEventType(value: string): "dividend" | "jcp" | "rendimento" {
+  const normalized = value.trim().toLowerCase();
+  if (normalized.includes("juros sobre capital próprio") || normalized.includes("juros sobre capital proprio") || normalized.includes("jcp")) {
+    return "jcp";
+  }
+
+  if (normalized.includes("dividendo")) {
+    return "dividend";
+  }
+
+  return "rendimento";
 }

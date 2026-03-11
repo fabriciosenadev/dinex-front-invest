@@ -878,6 +878,7 @@ export default function DashboardPage() {
         <IncomeTaxSection
           summary={incomeTaxSummary}
           assetDefinitions={assetDefinitions}
+          statementEntries={statementEntries}
           onRefresh={async () => {
             if (!session) {
               setStatus("Sessao nao encontrada. Faca login.");
