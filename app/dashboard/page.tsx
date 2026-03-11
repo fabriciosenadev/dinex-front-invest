@@ -4,6 +4,8 @@ import { FormEvent, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { authorizedFetch, clearStoredSession, getErrorMessage, persistSession, readStoredSession } from "../../lib/auth";
 import {
+  AssetDefinitionPayload,
+  AssetTypePayload,
   CorporateEventPayload,
   CorporateEventType,
   CurrentUserPayload,
@@ -25,6 +27,7 @@ import { StatementSection } from "./components/StatementSection";
 import { CorporateEventsSection } from "./components/CorporateEventsSection";
 import { PortfolioSection } from "./components/PortfolioSection";
 import { IncomeTaxSection } from "./components/IncomeTaxSection";
+import { AssetCatalogSection } from "./components/AssetCatalogSection";
 
 type MovementForm = {
   assetSymbol: string;
@@ -75,12 +78,24 @@ type CorporateEventForm = {
   notes: string;
 };
 
+type AssetCatalogForm = {
+  symbol: string;
+  type: AssetTypePayload;
+  notes: string;
+};
+
 const defaultCorporateEventForm: CorporateEventForm = {
   type: "TickerChange",
   sourceAssetSymbol: "PETR4",
   targetAssetSymbol: "",
   factor: "1",
   effectiveDate: new Date().toISOString().slice(0, 10),
+  notes: ""
+};
+
+const defaultAssetCatalogForm: AssetCatalogForm = {
+  symbol: "GOLD11",
+  type: "Etf",
   notes: ""
 };
 
@@ -108,12 +123,15 @@ export default function DashboardPage() {
   const [reconcileFile, setReconcileFile] = useState<File | null>(null);
   const [statementEntries, setStatementEntries] = useState<StatementEntryPayload[]>([]);
   const [corporateEvents, setCorporateEvents] = useState<CorporateEventPayload[]>([]);
+  const [assetDefinitions, setAssetDefinitions] = useState<AssetDefinitionPayload[]>([]);
+  const [assetCatalogForm, setAssetCatalogForm] = useState<AssetCatalogForm>(defaultAssetCatalogForm);
   const [editingCorporateEventId, setEditingCorporateEventId] = useState<string | null>(null);
   const [importFile, setImportFile] = useState<File | null>(null);
   const [loading, setLoading] = useState(false);
   const [statementLoading, setStatementLoading] = useState(false);
   const [importLoading, setImportLoading] = useState(false);
   const [corporateEventLoading, setCorporateEventLoading] = useState(false);
+  const [assetCatalogLoading, setAssetCatalogLoading] = useState(false);
   const [reconcileLoading, setReconcileLoading] = useState(false);
   const [status, setStatus] = useState("Carregando sessao...");
 
@@ -133,6 +151,7 @@ export default function DashboardPage() {
     setReconcileResult(null);
     setStatementEntries([]);
     setCorporateEvents([]);
+    setAssetDefinitions([]);
     setStatus(message);
     router.replace("/login");
   }
@@ -222,6 +241,23 @@ export default function DashboardPage() {
     setIncomeTaxSummary(payload ?? []);
   }
 
+  async function loadAssetDefinitions(activeSession: StoredSession) {
+    const { response, nextSession } = await authorizedFetch(activeSession, "/api/assets", { method: "GET" });
+    applyRefreshedSession(nextSession);
+
+    if (response.status === 401) {
+      clearSessionAndGoLogin("Sessao expirada. Faca login novamente.");
+      return;
+    }
+
+    if (!response.ok) {
+      throw new Error(await getErrorMessage(response, "Falha ao carregar cadastro de ativos."));
+    }
+
+    const payload = (await response.json()) as AssetDefinitionPayload[];
+    setAssetDefinitions(payload ?? []);
+  }
+
   useEffect(() => {
     const stored = readStoredSession();
     if (!stored) {
@@ -235,6 +271,7 @@ export default function DashboardPage() {
       .then(() => loadStatement(stored))
       .then(() => loadCorporateEvents(stored))
       .then(() => loadIncomeTaxSummary(stored))
+      .then(() => loadAssetDefinitions(stored))
       .then(() => setStatus("Pronto."))
       .catch((error) => setStatus(error instanceof Error ? error.message : "Erro ao carregar painel."));
   }, [router]);
@@ -512,6 +549,85 @@ export default function DashboardPage() {
     }
   }
 
+  async function onSubmitAssetCatalog(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!session) {
+      setStatus("Sessao nao encontrada. Faca login.");
+      return;
+    }
+
+    setAssetCatalogLoading(true);
+    setStatus("Salvando cadastro de ativo...");
+
+    try {
+      const payload = {
+        symbol: assetCatalogForm.symbol,
+        type: assetCatalogForm.type,
+        notes: assetCatalogForm.notes || null
+      };
+
+      const { response, nextSession } = await authorizedFetch(session, "/api/assets", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      });
+      applyRefreshedSession(nextSession);
+
+      if (response.status === 401) {
+        clearSessionAndGoLogin("Sessao expirada. Faca login novamente.");
+        return;
+      }
+
+      if (!response.ok) {
+        throw new Error(await getErrorMessage(response, "Falha ao salvar ativo."));
+      }
+
+      await loadAssetDefinitions(nextSession ?? session);
+      setStatus("Ativo salvo com sucesso.");
+    } catch (error) {
+      setStatus(error instanceof Error ? error.message : "Erro ao salvar ativo.");
+    } finally {
+      setAssetCatalogLoading(false);
+    }
+  }
+
+  async function onDeleteAssetDefinition(assetId: string) {
+    if (!session) {
+      setStatus("Sessao nao encontrada. Faca login.");
+      return;
+    }
+
+    const confirmed = window.confirm("Deseja excluir esse ativo cadastrado?");
+    if (!confirmed) {
+      return;
+    }
+
+    setAssetCatalogLoading(true);
+    setStatus("Excluindo ativo...");
+    try {
+      const { response, nextSession } = await authorizedFetch(session, `/api/assets/${assetId}`, {
+        method: "DELETE"
+      });
+      applyRefreshedSession(nextSession);
+
+      if (response.status === 401) {
+        clearSessionAndGoLogin("Sessao expirada. Faca login novamente.");
+        return;
+      }
+
+      if (!response.ok) {
+        throw new Error(await getErrorMessage(response, "Falha ao excluir ativo."));
+      }
+
+      await loadAssetDefinitions(nextSession ?? session);
+      setStatus("Ativo excluido com sucesso.");
+    } catch (error) {
+      setStatus(error instanceof Error ? error.message : "Erro ao excluir ativo.");
+    } finally {
+      setAssetCatalogLoading(false);
+    }
+  }
+
   async function onReconcilePortfolio(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!session) {
@@ -727,6 +843,7 @@ export default function DashboardPage() {
       {activeTab === "portfolio" && (
         <PortfolioSection
           positions={positions}
+          assetDefinitions={assetDefinitions}
           reconcileResult={reconcileResult}
           reconcileLoading={reconcileLoading}
           onReconcile={onReconcilePortfolio}
@@ -737,6 +854,7 @@ export default function DashboardPage() {
       {activeTab === "income-tax" && (
         <IncomeTaxSection
           summary={incomeTaxSummary}
+          assetDefinitions={assetDefinitions}
           onRefresh={async () => {
             if (!session) {
               setStatus("Sessao nao encontrada. Faca login.");
@@ -745,6 +863,26 @@ export default function DashboardPage() {
 
             await loadIncomeTaxSummary(session);
             setStatus("Base de IR atualizada.");
+          }}
+        />
+      )}
+
+      {activeTab === "assets" && (
+        <AssetCatalogSection
+          form={assetCatalogForm}
+          assets={assetDefinitions}
+          loading={assetCatalogLoading}
+          onChange={setAssetCatalogForm}
+          onSubmit={onSubmitAssetCatalog}
+          onDelete={onDeleteAssetDefinition}
+          onRefresh={async () => {
+            if (!session) {
+              setStatus("Sessao nao encontrada. Faca login.");
+              return;
+            }
+
+            await loadAssetDefinitions(session);
+            setStatus("Cadastro de ativos atualizado.");
           }}
         />
       )}

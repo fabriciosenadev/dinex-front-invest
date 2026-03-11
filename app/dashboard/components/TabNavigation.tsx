@@ -1,6 +1,6 @@
 "use client";
 
-export type DashboardTab = "movements" | "statement" | "corporate-events" | "portfolio" | "income-tax";
+export type DashboardTab = "movements" | "statement" | "corporate-events" | "portfolio" | "income-tax" | "assets";
 
 type TabNavigationProps = {
   activeTab: DashboardTab;
@@ -12,7 +12,8 @@ const tabs: Array<{ id: DashboardTab; label: string }> = [
   { id: "statement", label: "Extrato" },
   { id: "corporate-events", label: "Eventos" },
   { id: "portfolio", label: "Carteira" },
-  { id: "income-tax", label: "Imposto de Renda" }
+  { id: "income-tax", label: "Imposto de Renda" },
+  { id: "assets", label: "Ativos" }
 ];
 
 export function TabNavigation({ activeTab, onChange }: TabNavigationProps) {

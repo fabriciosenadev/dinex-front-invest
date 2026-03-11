@@ -1,14 +1,16 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { IncomeTaxYearSummaryPayload } from "../../../lib/types";
+import { classifyAssetWithCatalog } from "../../../lib/assetClassification";
+import { AssetDefinitionPayload, IncomeTaxYearSummaryPayload } from "../../../lib/types";
 
 type IncomeTaxSectionProps = {
   summary: IncomeTaxYearSummaryPayload[];
+  assetDefinitions: AssetDefinitionPayload[];
   onRefresh: () => Promise<void>;
 };
 
-export function IncomeTaxSection({ summary, onRefresh }: IncomeTaxSectionProps) {
+export function IncomeTaxSection({ summary, assetDefinitions, onRefresh }: IncomeTaxSectionProps) {
   const [selectedYear, setSelectedYear] = useState<number | null>(null);
   const [assetTab, setAssetTab] = useState<"acao" | "fii">("acao");
 
@@ -38,7 +40,7 @@ export function IncomeTaxSection({ summary, onRefresh }: IncomeTaxSectionProps) 
 
     return currentYearSummary.companies
       .map((company) => {
-        const assets = company.assets.filter((asset) => classifyIncomeTaxAsset(asset.assetSymbol) === assetTab);
+        const assets = company.assets.filter((asset) => classifyIncomeTaxAsset(asset.assetSymbol, assetDefinitions) === assetTab);
         if (assets.length === 0) {
           return null;
         }
@@ -56,7 +58,7 @@ export function IncomeTaxSection({ summary, onRefresh }: IncomeTaxSectionProps) 
         };
       })
       .filter((item): item is NonNullable<typeof item> => item !== null);
-  }, [currentYearSummary, assetTab]);
+  }, [currentYearSummary, assetTab, assetDefinitions]);
 
   const totalCost = filteredCompanies.reduce((accumulator, company) => accumulator + company.totalCost, 0);
   const fiiAssets = useMemo(
@@ -206,18 +208,14 @@ function formatMoney(value: number, currency: string) {
   }
 }
 
-function classifyIncomeTaxAsset(assetSymbol: string): "acao" | "fii" | "outro" {
-  const normalized = assetSymbol.trim().toUpperCase();
-  if (normalized === "TAEE11") {
+function classifyIncomeTaxAsset(assetSymbol: string, assetDefinitions: AssetDefinitionPayload[]): "acao" | "fii" | "outro" {
+  const assetClass = classifyAssetWithCatalog(assetSymbol, assetDefinitions);
+  if (assetClass === "acao") {
     return "acao";
   }
 
-  if (/^[A-Z]{4,5}11$/.test(normalized)) {
+  if (assetClass === "fii") {
     return "fii";
-  }
-
-  if (/^[A-Z]{4,5}[3456]$/.test(normalized)) {
-    return "acao";
   }
 
   return "outro";

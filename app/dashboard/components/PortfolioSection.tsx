@@ -1,10 +1,12 @@
 "use client";
 
 import { FormEvent, useMemo, useState } from "react";
-import { PortfolioPosition, ReconcilePortfolioPayload } from "../../../lib/types";
+import { classifyAssetWithCatalog, AssetClass } from "../../../lib/assetClassification";
+import { AssetDefinitionPayload, PortfolioPosition, ReconcilePortfolioPayload } from "../../../lib/types";
 
 type PortfolioSectionProps = {
   positions: PortfolioPosition[];
+  assetDefinitions: AssetDefinitionPayload[];
   reconcileResult: ReconcilePortfolioPayload | null;
   reconcileLoading: boolean;
   onReconcile: (event: FormEvent<HTMLFormElement>) => Promise<void>;
@@ -13,6 +15,7 @@ type PortfolioSectionProps = {
 
 export function PortfolioSection({
   positions,
+  assetDefinitions,
   reconcileResult,
   reconcileLoading,
   onReconcile,
@@ -42,7 +45,7 @@ export function PortfolioSection({
           return false;
         }
 
-        const assetClass = classifyAsset(position.assetSymbol);
+        const assetClass = classifyAsset(position.assetSymbol, assetDefinitions);
         if (assetClassFilter !== "all" && assetClass !== assetClassFilter) {
           return false;
         }
@@ -150,7 +153,9 @@ export function PortfolioSection({
               <tr key={position.assetSymbol} className={isFractional(position.quantity) ? "row-fractional" : undefined}>
                 <td>{position.assetSymbol}</td>
                 <td>
-                  <span className={`badge-class badge-${classifyAsset(position.assetSymbol)}`}>{classifyAssetLabel(position.assetSymbol)}</span>
+                  <span className={`badge-class badge-${classifyAsset(position.assetSymbol, assetDefinitions)}`}>
+                    {classifyAssetLabel(position.assetSymbol, assetDefinitions)}
+                  </span>
                 </td>
                 <td>
                   {position.quantity}
@@ -256,46 +261,11 @@ function isFractional(value: number) {
   return Math.abs(value - Math.trunc(value)) > 0.000001;
 }
 
-type AssetClass = "acao" | "fii" | "rf" | "direito" | "etf" | "bdr" | "outro";
-
-const assetClassOverrides: Record<string, AssetClass> = {
-  TAEE11: "acao"
-};
-
-function classifyAsset(assetSymbol: string): AssetClass {
-  const normalized = assetSymbol.trim().toUpperCase();
-  if (assetClassOverrides[normalized]) {
-    return assetClassOverrides[normalized];
-  }
-
-  if (normalized.startsWith("TESOURO") || normalized.startsWith("LCI-") || normalized.startsWith("LCA-") || normalized.startsWith("CDB-")) {
-    return "rf";
-  }
-
-  if (/^[A-Z]{4,5}12$/.test(normalized)) {
-    return "direito";
-  }
-
-  if (/^[A-Z]{4}39$/.test(normalized) || /^[A-Z]{4}11B$/.test(normalized)) {
-    return "etf";
-  }
-
-  if (/^[A-Z]{4}34$/.test(normalized)) {
-    return "bdr";
-  }
-
-  if (/^[A-Z]{4,5}11$/.test(normalized)) {
-    return "fii";
-  }
-
-  if (/^[A-Z]{4,5}[3456]$/.test(normalized)) {
-    return "acao";
-  }
-
-  return "outro";
+function classifyAsset(assetSymbol: string, assetDefinitions: AssetDefinitionPayload[]): AssetClass {
+  return classifyAssetWithCatalog(assetSymbol, assetDefinitions);
 }
 
-function classifyAssetLabel(assetSymbol: string): string {
+function classifyAssetLabel(assetSymbol: string, assetDefinitions: AssetDefinitionPayload[]): string {
   const map: Record<AssetClass, string> = {
     acao: "Ação",
     fii: "FII",
@@ -305,7 +275,7 @@ function classifyAssetLabel(assetSymbol: string): string {
     bdr: "BDR",
     outro: "Outro"
   };
-  return map[classifyAsset(assetSymbol)];
+  return map[classifyAsset(assetSymbol, assetDefinitions)];
 }
 
 function formatMoney(value: number, currency: string) {

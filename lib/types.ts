@@ -142,3 +142,20 @@ export type CorporateEventPayload = {
   notes?: string | null;
   appliedAtUtc: string;
 };
+
+export type AssetTypePayload = "Stock" | "Fii" | "Etf" | "Bdr" | "FixedIncome" | "Other";
+
+export type AssetDefinitionPayload = {
+  id: string;
+  symbol: string;
+  type: AssetTypePayload;
+  notes?: string | null;
+  createdAtUtc: string;
+  updatedAtUtc?: string | null;
+};
+
+export type UpsertAssetDefinitionPayload = {
+  symbol: string;
+  type: AssetTypePayload;
+  notes?: string | null;
+};
