@@ -251,7 +251,8 @@ export function IncomeTaxSection({ summary, assetDefinitions, statementEntries, 
             {assetTab === "acao" ? `Empresas: ${filteredCompanies.length}` : `Ativos: ${nonEquityAssets.length}`} | Patrimônio (custo):{" "}
             {new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(totalCost)}
           </p>
-          <table>
+          <div className="table-scroll">
+            <table>
             <thead>
               {assetTab === "acao" ? (
                 <tr>
@@ -343,7 +344,8 @@ export function IncomeTaxSection({ summary, assetDefinitions, statementEntries, 
                 </tr>
               )}
             </tbody>
-          </table>
+            </table>
+          </div>
         </>
       )}
 
