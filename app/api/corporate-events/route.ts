@@ -5,8 +5,11 @@ const apiBaseUrl = process.env.DINEX_API_URL ?? "http://localhost:5254";
 export async function GET(request: Request) {
   try {
     const authHeader = request.headers.get("authorization") ?? "";
+    const url = new URL(request.url);
+    const query = url.searchParams.toString();
+    const target = query ? `${apiBaseUrl}/api/corporateevents?${query}` : `${apiBaseUrl}/api/corporateevents`;
 
-    const response = await fetch(`${apiBaseUrl}/api/corporateevents`, {
+    const response = await fetch(target, {
       method: "GET",
       headers: {
         Authorization: authHeader

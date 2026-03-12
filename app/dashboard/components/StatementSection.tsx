@@ -2,6 +2,7 @@
 
 import { FormEvent, useId, useState } from "react";
 import { StatementEntryPayload, StatementEntryType } from "../../../lib/types";
+import { PaginationControls } from "./PaginationControls";
 
 type StatementForm = {
   type: StatementEntryType;
@@ -31,9 +32,15 @@ type StatementSectionProps = {
   onChange: (next: StatementForm) => void;
   importState: ImportFormState;
   showManualEntry?: boolean;
+  pagination: {
+    page: number;
+    pageSize: number;
+    onPageChange: (nextPage: number) => void;
+    onPageSizeChange: (nextPageSize: number) => void;
+  };
 };
 
-export function StatementSection({ form, entries, entryTypeOptions, onChange, importState, showManualEntry = true }: StatementSectionProps) {
+export function StatementSection({ form, entries, entryTypeOptions, onChange, importState, showManualEntry = true, pagination }: StatementSectionProps) {
   const [showAdvancedFields, setShowAdvancedFields] = useState(false);
   const [selectedFileName, setSelectedFileName] = useState("Nenhum arquivo escolhido");
   const fileInputId = useId();
@@ -195,6 +202,14 @@ export function StatementSection({ form, entries, entryTypeOptions, onChange, im
           </tbody>
         </table>
       </div>
+      <PaginationControls
+        page={pagination.page}
+        pageSize={pagination.pageSize}
+        itemCount={entries.length}
+        loading={importState.importLoading || importState.statementLoading}
+        onPageChange={pagination.onPageChange}
+        onPageSizeChange={pagination.onPageSizeChange}
+      />
     </section>
   );
 }

@@ -2,6 +2,7 @@
 
 import { FormEvent } from "react";
 import { CorporateEventPayload, CorporateEventType } from "../../../lib/types";
+import { PaginationControls } from "./PaginationControls";
 
 type CorporateEventForm = {
   type: CorporateEventType;
@@ -23,6 +24,12 @@ type CorporateEventsSectionProps = {
   onEdit: (event: CorporateEventPayload) => void;
   onDelete: (id: string) => Promise<void>;
   onCancelEdit: () => void;
+  pagination: {
+    page: number;
+    pageSize: number;
+    onPageChange: (nextPage: number) => void;
+    onPageSizeChange: (nextPageSize: number) => void;
+  };
 };
 
 const eventTypeOptions: Array<{ value: CorporateEventType; label: string }> = [
@@ -41,7 +48,8 @@ export function CorporateEventsSection({
   onRefresh,
   onEdit,
   onDelete,
-  onCancelEdit
+  onCancelEdit,
+  pagination
 }: CorporateEventsSectionProps) {
   const requiresTarget = form.type === "TickerChange";
 
@@ -149,6 +157,14 @@ export function CorporateEventsSection({
           </tbody>
         </table>
       </div>
+      <PaginationControls
+        page={pagination.page}
+        pageSize={pagination.pageSize}
+        itemCount={events.length}
+        loading={loading}
+        onPageChange={pagination.onPageChange}
+        onPageSizeChange={pagination.onPageSizeChange}
+      />
     </section>
   );
 }

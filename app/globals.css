@@ -1094,9 +1094,33 @@ details > summary {
     align-items: center;
   }
 
-  .top-bar-actions {
-    gap: 12px;
-  }
+.top-bar-actions {
+  gap: 12px;
+}
+}
+
+.pagination-controls {
+  margin-top: 0.75rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.pagination-label {
+  margin: 0;
+}
+
+.pagination-size {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.pagination-size select {
+  width: auto;
+  min-width: 90px;
 }
 
 @media (min-width: 960px) {

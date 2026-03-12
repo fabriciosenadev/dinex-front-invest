@@ -128,6 +128,14 @@ export default function DashboardPage() {
   const [statementEntries, setStatementEntries] = useState<StatementEntryPayload[]>([]);
   const [corporateEvents, setCorporateEvents] = useState<CorporateEventPayload[]>([]);
   const [assetDefinitions, setAssetDefinitions] = useState<AssetDefinitionPayload[]>([]);
+  const [portfolioPage, setPortfolioPage] = useState(1);
+  const [portfolioPageSize, setPortfolioPageSize] = useState(25);
+  const [statementPage, setStatementPage] = useState(1);
+  const [statementPageSize, setStatementPageSize] = useState(25);
+  const [corporateEventsPage, setCorporateEventsPage] = useState(1);
+  const [corporateEventsPageSize, setCorporateEventsPageSize] = useState(25);
+  const [assetsPage, setAssetsPage] = useState(1);
+  const [assetsPageSize, setAssetsPageSize] = useState(25);
   const [assetCatalogForm, setAssetCatalogForm] = useState<AssetCatalogForm>(defaultAssetCatalogForm);
   const [editingAssetDefinitionId, setEditingAssetDefinitionId] = useState<string | null>(null);
   const [editingCorporateEventId, setEditingCorporateEventId] = useState<string | null>(null);
@@ -191,8 +199,12 @@ export default function DashboardPage() {
     setCurrentUser(payload);
   }
 
-  async function loadPortfolio(activeSession: StoredSession) {
-    const { response, nextSession } = await authorizedFetch(activeSession, "/api/movements/portfolio", { method: "GET" });
+  async function loadPortfolio(activeSession: StoredSession, page = portfolioPage, pageSize = portfolioPageSize) {
+    const { response, nextSession } = await authorizedFetch(
+      activeSession,
+      `/api/movements/portfolio?page=${page}&pageSize=${pageSize}`,
+      { method: "GET" }
+    );
     applyRefreshedSession(nextSession);
 
     if (response.status === 401) {
@@ -205,11 +217,13 @@ export default function DashboardPage() {
     }
 
     const result = (await response.json()) as PortfolioPosition[];
+    setPortfolioPage(page);
+    setPortfolioPageSize(pageSize);
     setPositions(result ?? []);
   }
 
-  async function loadStatement(activeSession: StoredSession) {
-    const { response, nextSession } = await authorizedFetch(activeSession, "/api/statement", { method: "GET" });
+  async function loadStatement(activeSession: StoredSession, page = statementPage, pageSize = statementPageSize) {
+    const { response, nextSession } = await authorizedFetch(activeSession, `/api/statement?page=${page}&pageSize=${pageSize}`, { method: "GET" });
     applyRefreshedSession(nextSession);
 
     if (response.status === 401) {
@@ -222,11 +236,17 @@ export default function DashboardPage() {
     }
 
     const payload = (await response.json()) as StatementEntryPayload[];
+    setStatementPage(page);
+    setStatementPageSize(pageSize);
     setStatementEntries(payload ?? []);
   }
 
-  async function loadCorporateEvents(activeSession: StoredSession) {
-    const { response, nextSession } = await authorizedFetch(activeSession, "/api/corporate-events", { method: "GET" });
+  async function loadCorporateEvents(activeSession: StoredSession, page = corporateEventsPage, pageSize = corporateEventsPageSize) {
+    const { response, nextSession } = await authorizedFetch(
+      activeSession,
+      `/api/corporate-events?page=${page}&pageSize=${pageSize}`,
+      { method: "GET" }
+    );
     applyRefreshedSession(nextSession);
 
     if (response.status === 401) {
@@ -239,6 +259,8 @@ export default function DashboardPage() {
     }
 
     const payload = (await response.json()) as CorporateEventPayload[];
+    setCorporateEventsPage(page);
+    setCorporateEventsPageSize(pageSize);
     setCorporateEvents(payload ?? []);
   }
 
@@ -259,8 +281,8 @@ export default function DashboardPage() {
     setIncomeTaxSummary(payload ?? []);
   }
 
-  async function loadAssetDefinitions(activeSession: StoredSession) {
-    const { response, nextSession } = await authorizedFetch(activeSession, "/api/assets", { method: "GET" });
+  async function loadAssetDefinitions(activeSession: StoredSession, page = assetsPage, pageSize = assetsPageSize) {
+    const { response, nextSession } = await authorizedFetch(activeSession, `/api/assets?page=${page}&pageSize=${pageSize}`, { method: "GET" });
     applyRefreshedSession(nextSession);
 
     if (response.status === 401) {
@@ -273,6 +295,8 @@ export default function DashboardPage() {
     }
 
     const payload = (await response.json()) as AssetDefinitionPayload[];
+    setAssetsPage(page);
+    setAssetsPageSize(pageSize);
     setAssetDefinitions(payload ?? []);
   }
 
@@ -815,6 +839,70 @@ export default function DashboardPage() {
     }
   }
 
+  async function onPortfolioPageChange(nextPage: number) {
+    if (!session || nextPage < 1) {
+      return;
+    }
+
+    await loadPortfolio(session, nextPage, portfolioPageSize);
+  }
+
+  async function onPortfolioPageSizeChange(nextPageSize: number) {
+    if (!session || nextPageSize < 1) {
+      return;
+    }
+
+    await loadPortfolio(session, 1, nextPageSize);
+  }
+
+  async function onStatementPageChange(nextPage: number) {
+    if (!session || nextPage < 1) {
+      return;
+    }
+
+    await loadStatement(session, nextPage, statementPageSize);
+  }
+
+  async function onStatementPageSizeChange(nextPageSize: number) {
+    if (!session || nextPageSize < 1) {
+      return;
+    }
+
+    await loadStatement(session, 1, nextPageSize);
+  }
+
+  async function onCorporateEventsPageChange(nextPage: number) {
+    if (!session || nextPage < 1) {
+      return;
+    }
+
+    await loadCorporateEvents(session, nextPage, corporateEventsPageSize);
+  }
+
+  async function onCorporateEventsPageSizeChange(nextPageSize: number) {
+    if (!session || nextPageSize < 1) {
+      return;
+    }
+
+    await loadCorporateEvents(session, 1, nextPageSize);
+  }
+
+  async function onAssetsPageChange(nextPage: number) {
+    if (!session || nextPage < 1) {
+      return;
+    }
+
+    await loadAssetDefinitions(session, nextPage, assetsPageSize);
+  }
+
+  async function onAssetsPageSizeChange(nextPageSize: number) {
+    if (!session || nextPageSize < 1) {
+      return;
+    }
+
+    await loadAssetDefinitions(session, 1, nextPageSize);
+  }
+
   return (
     <main className="app-shell">
       <header className="top-bar">
@@ -947,6 +1035,12 @@ export default function DashboardPage() {
                   },
                   onImportFileChange: setImportFile
                 }}
+                pagination={{
+                  page: statementPage,
+                  pageSize: statementPageSize,
+                  onPageChange: onStatementPageChange,
+                  onPageSizeChange: onStatementPageSizeChange
+                }}
               />
             )}
 
@@ -970,6 +1064,12 @@ export default function DashboardPage() {
                 onEdit={onEditCorporateEvent}
                 onDelete={onDeleteCorporateEvent}
                 onCancelEdit={onCancelCorporateEventEdit}
+                pagination={{
+                  page: corporateEventsPage,
+                  pageSize: corporateEventsPageSize,
+                  onPageChange: onCorporateEventsPageChange,
+                  onPageSizeChange: onCorporateEventsPageSizeChange
+                }}
               />
             )}
 
@@ -982,6 +1082,12 @@ export default function DashboardPage() {
                 onReconcile={onReconcilePortfolio}
                 onReconcileFileChange={setReconcileFile}
                 showReconcile={isAdvancedMode}
+                pagination={{
+                  page: portfolioPage,
+                  pageSize: portfolioPageSize,
+                  onPageChange: onPortfolioPageChange,
+                  onPageSizeChange: onPortfolioPageSizeChange
+                }}
               />
             )}
 
@@ -1021,6 +1127,12 @@ export default function DashboardPage() {
 
                   await loadAssetDefinitions(session);
                   setStatus("Cadastro de ativos atualizado.");
+                }}
+                pagination={{
+                  page: assetsPage,
+                  pageSize: assetsPageSize,
+                  onPageChange: onAssetsPageChange,
+                  onPageSizeChange: onAssetsPageSizeChange
                 }}
               />
             )}

@@ -4,6 +4,7 @@ import { FormEvent, useMemo, useState } from "react";
 import { ResponsiveSankey } from "@nivo/sankey";
 import { classifyAssetWithCatalog, AssetClass } from "../../../lib/assetClassification";
 import { AssetDefinitionPayload, PortfolioPosition, ReconcilePortfolioPayload } from "../../../lib/types";
+import { PaginationControls } from "./PaginationControls";
 
 type PortfolioSectionProps = {
   positions: PortfolioPosition[];
@@ -13,6 +14,12 @@ type PortfolioSectionProps = {
   onReconcile: (event: FormEvent<HTMLFormElement>) => Promise<void>;
   onReconcileFileChange: (file: File | null) => void;
   showReconcile?: boolean;
+  pagination: {
+    page: number;
+    pageSize: number;
+    onPageChange: (nextPage: number) => void;
+    onPageSizeChange: (nextPageSize: number) => void;
+  };
 };
 
 export function PortfolioSection({
@@ -22,7 +29,8 @@ export function PortfolioSection({
   reconcileLoading,
   onReconcile,
   onReconcileFileChange,
-  showReconcile = true
+  showReconcile = true,
+  pagination
 }: PortfolioSectionProps) {
   const [portfolioSearch, setPortfolioSearch] = useState("");
   const [onlyRv, setOnlyRv] = useState(true);
@@ -264,6 +272,13 @@ export function PortfolioSection({
             </tbody>
           </table>
         </div>
+        <PaginationControls
+          page={pagination.page}
+          pageSize={pagination.pageSize}
+          itemCount={portfolioView.filtered.length}
+          onPageChange={pagination.onPageChange}
+          onPageSizeChange={pagination.onPageSizeChange}
+        />
       </section>
 
       <section className="card">

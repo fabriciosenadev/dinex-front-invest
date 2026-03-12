@@ -2,6 +2,7 @@
 
 import { FormEvent } from "react";
 import { AssetDefinitionPayload, AssetTypePayload } from "../../../lib/types";
+import { PaginationControls } from "./PaginationControls";
 
 type AssetCatalogForm = {
   symbol: string;
@@ -20,6 +21,12 @@ type AssetCatalogSectionProps = {
   onCancelEdit: () => void;
   onDelete: (assetId: string) => Promise<void>;
   onRefresh: () => Promise<void>;
+  pagination: {
+    page: number;
+    pageSize: number;
+    onPageChange: (nextPage: number) => void;
+    onPageSizeChange: (nextPageSize: number) => void;
+  };
 };
 
 const assetTypeOptions: Array<{ value: AssetTypePayload; label: string }> = [
@@ -41,7 +48,8 @@ export function AssetCatalogSection({
   onEdit,
   onCancelEdit,
   onDelete,
-  onRefresh
+  onRefresh,
+  pagination
 }: AssetCatalogSectionProps) {
   return (
     <section className="card">
@@ -121,6 +129,14 @@ export function AssetCatalogSection({
           </tbody>
         </table>
       </div>
+      <PaginationControls
+        page={pagination.page}
+        pageSize={pagination.pageSize}
+        itemCount={assets.length}
+        loading={loading}
+        onPageChange={pagination.onPageChange}
+        onPageSizeChange={pagination.onPageSizeChange}
+      />
     </section>
   );
 }
