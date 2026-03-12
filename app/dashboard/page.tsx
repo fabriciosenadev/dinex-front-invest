@@ -2,7 +2,9 @@
 
 import { FormEvent, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 import { authorizedFetch, clearStoredSession, getErrorMessage, persistSession, readStoredSession } from "../../lib/auth";
+import { getStoredTheme, THEME_CHANGED_EVENT, ThemeMode } from "../../lib/theme";
 import {
   AssetDefinitionPayload,
   AssetTypePayload,
@@ -114,6 +116,7 @@ const entryTypeOptions: Array<{ value: StatementEntryType; label: string }> = [
 
 export default function DashboardPage() {
   const router = useRouter();
+  const [theme, setTheme] = useState<ThemeMode>("light");
   const [activeTab, setActiveTab] = useState<DashboardTab>("movements");
   const [dashboardMode, setDashboardMode] = useState<DashboardMode>("simple");
   const [session, setSession] = useState<StoredSession | null>(null);
@@ -317,6 +320,28 @@ export default function DashboardPage() {
       .then(() => setStatus("Pronto."))
       .catch((error) => setStatus(error instanceof Error ? error.message : "Erro ao carregar painel."));
   }, [router]);
+
+  useEffect(() => {
+    const initialTheme = getStoredTheme();
+    if (initialTheme) {
+      setTheme(initialTheme);
+    } else {
+      const currentTheme = document.documentElement.dataset.theme;
+      if (currentTheme === "light" || currentTheme === "dark") {
+        setTheme(currentTheme);
+      }
+    }
+
+    function handleThemeChange(event: Event) {
+      const customEvent = event as CustomEvent<ThemeMode>;
+      if (customEvent.detail === "light" || customEvent.detail === "dark") {
+        setTheme(customEvent.detail);
+      }
+    }
+
+    window.addEventListener(THEME_CHANGED_EVENT, handleThemeChange as EventListener);
+    return () => window.removeEventListener(THEME_CHANGED_EVENT, handleThemeChange as EventListener);
+  }, []);
 
   useEffect(() => {
     if (!availableTabs.includes(activeTab)) {
@@ -907,7 +932,14 @@ export default function DashboardPage() {
     <main className="app-shell">
       <header className="top-bar">
         <div className="top-bar-brand">
-          <h1>DinEx</h1>
+          <Image
+            src={theme === "dark" ? "/branding/logo-din-ex-dark.svg" : "/branding/logo-din-ex-light.svg"}
+            alt="DinEx"
+            width={180}
+            height={56}
+            className="top-bar-logo"
+            priority
+          />
           <p>Painel de investimentos</p>
         </div>
         <div className="top-bar-actions">

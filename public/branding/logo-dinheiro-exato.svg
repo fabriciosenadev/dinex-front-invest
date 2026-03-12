@@ -1,0 +1,29 @@
+<svg width="640" height="180" viewBox="0 0 640 180" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="title desc">
+  <title id="title">Dinheiro Exato</title>
+  <desc id="desc">Logo com simbolo DE e texto Dinheiro Exato.</desc>
+  <defs>
+    <linearGradient id="deBg" x1="0" y1="0" x2="140" y2="140" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#4F7DF7"/>
+      <stop offset="1" stop-color="#2850C8"/>
+    </linearGradient>
+    <linearGradient id="deAccent" x1="0" y1="0" x2="1" y2="1">
+      <stop stop-color="#8EF1A8"/>
+      <stop offset="1" stop-color="#3ACB6F"/>
+    </linearGradient>
+  </defs>
+
+  <g transform="translate(34 34)">
+    <rect x="8" y="66" width="22" height="34" rx="6" fill="white"/>
+    <rect x="40" y="52" width="22" height="48" rx="6" fill="white"/>
+    <rect x="72" y="36" width="22" height="64" rx="6" fill="url(#deAccent)"/>
+    <path d="M10 44L36 30L56 34L90 10" stroke="url(#deAccent)" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M78 10H90V22" stroke="url(#deAccent)" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/>
+    <circle cx="18" cy="18" r="12" fill="white"/>
+    <path d="M18 10V26M12 14C12 11.8 14 10 18 10C22 10 24 11.8 24 14C24 16.2 22 18 18 18C14 18 12 19.8 12 22C12 24.2 14 26 18 26C22 26 24 24.2 24 22" stroke="#2850C8" stroke-width="2.5" stroke-linecap="round"/>
+  </g>
+
+  <g fill="#0F1A33">
+    <text x="190" y="88" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="44" font-weight="800" letter-spacing="0.3">Dinheiro</text>
+    <text x="190" y="132" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="44" font-weight="800" letter-spacing="0.3">Exato</text>
+  </g>
+</svg>

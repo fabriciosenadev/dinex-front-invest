@@ -2,7 +2,9 @@
 
 import { FormEvent, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 import { authenticate, persistSession, readStoredSession } from "../../lib/auth";
+import { getStoredTheme, THEME_CHANGED_EVENT, ThemeMode } from "../../lib/theme";
 import { ThemeToggle } from "../components/ThemeToggle";
 
 type LoginForm = {
@@ -18,6 +20,7 @@ const defaultLoginForm: LoginForm = {
 export default function LoginPage() {
   const router = useRouter();
   const [form, setForm] = useState<LoginForm>(defaultLoginForm);
+  const [theme, setTheme] = useState<ThemeMode>("light");
   const [loading, setLoading] = useState(false);
   const [status, setStatus] = useState("Use suas credenciais para entrar.");
 
@@ -27,6 +30,28 @@ export default function LoginPage() {
       router.replace("/dashboard");
     }
   }, [router]);
+
+  useEffect(() => {
+    const initialTheme = getStoredTheme();
+    if (initialTheme) {
+      setTheme(initialTheme);
+    } else {
+      const currentTheme = document.documentElement.dataset.theme;
+      if (currentTheme === "light" || currentTheme === "dark") {
+        setTheme(currentTheme);
+      }
+    }
+
+    function handleThemeChange(event: Event) {
+      const customEvent = event as CustomEvent<ThemeMode>;
+      if (customEvent.detail === "light" || customEvent.detail === "dark") {
+        setTheme(customEvent.detail);
+      }
+    }
+
+    window.addEventListener(THEME_CHANGED_EVENT, handleThemeChange as EventListener);
+    return () => window.removeEventListener(THEME_CHANGED_EVENT, handleThemeChange as EventListener);
+  }, []);
 
   async function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -50,7 +75,14 @@ export default function LoginPage() {
       <header className="page-header">
         <div className="auth-header-row">
           <div>
-            <h1>DinEx Frontend</h1>
+            <Image
+              src={theme === "dark" ? "/branding/logo-dinheiro-exato-dark.svg" : "/branding/logo-dinheiro-exato-light.svg"}
+              alt="Dinheiro Exato"
+              width={320}
+              height={90}
+              priority
+              className="auth-brand-logo"
+            />
             <p>Acesso ao painel autenticado.</p>
           </div>
           <ThemeToggle compact />

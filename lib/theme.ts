@@ -1,6 +1,7 @@
 export type ThemeMode = "light" | "dark";
 
 export const THEME_STORAGE_KEY = "dinex-theme";
+export const THEME_CHANGED_EVENT = "dinex:theme-changed";
 
 export function isThemeMode(value: string | null): value is ThemeMode {
   return value === "light" || value === "dark";
@@ -22,4 +23,5 @@ export function applyTheme(theme: ThemeMode) {
 
   document.documentElement.dataset.theme = theme;
   window.localStorage.setItem(THEME_STORAGE_KEY, theme);
+  window.dispatchEvent(new CustomEvent<ThemeMode>(THEME_CHANGED_EVENT, { detail: theme }));
 }
