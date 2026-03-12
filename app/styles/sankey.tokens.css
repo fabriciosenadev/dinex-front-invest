@@ -1,0 +1,19 @@
+:root {
+  --sankey-bg: #f7faff;
+  --sankey-border: #d9e4f8;
+  --sankey-label-color: #223b67;
+  --sankey-label-strong-color: #162a4a;
+  --sankey-tooltip-bg: #ffffff;
+  --sankey-tooltip-text: #162033;
+  --sankey-tooltip-border: #d5e2fb;
+}
+
+:root[data-theme="dark"] {
+  --sankey-bg: #10203a;
+  --sankey-border: #2f446d;
+  --sankey-label-color: #d9e7ff;
+  --sankey-label-strong-color: #f2f7ff;
+  --sankey-tooltip-bg: #132238;
+  --sankey-tooltip-text: #f1f6ff;
+  --sankey-tooltip-border: #33507a;
+}

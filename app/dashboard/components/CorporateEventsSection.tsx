@@ -47,12 +47,9 @@ export function CorporateEventsSection({
 
   return (
     <section className="card">
-      <h2 className="section-title">
-        <span aria-hidden="true">🔁</span>
-        <span>Eventos Corporativos Manuais</span>
-      </h2>
+      <h2>Eventos Corporativos Manuais</h2>
       <form onSubmit={onSubmit}>
-        <div className="grid">
+        <div className="grid form-grid-three">
           <label>
             Tipo
             <select value={form.type} onChange={(e) => onChange({ ...form, type: e.target.value as CorporateEventType })}>
@@ -100,11 +97,11 @@ export function CorporateEventsSection({
             {loading ? "Aplicando..." : editingEventId ? "Salvar Alteracao" : "Cadastrar e Aplicar Evento"}
           </button>
           {editingEventId && (
-            <button type="button" onClick={onCancelEdit} disabled={loading}>
+            <button type="button" className="button-secondary" onClick={onCancelEdit} disabled={loading}>
               Cancelar Edicao
             </button>
           )}
-          <button type="button" onClick={onRefresh} disabled={loading}>
+          <button type="button" className="button-secondary" onClick={onRefresh} disabled={loading}>
             Atualizar Eventos
           </button>
         </div>
@@ -134,11 +131,11 @@ export function CorporateEventsSection({
                 <td>{entry.notes ?? "-"}</td>
                 <td>
                   <div className="inline-actions">
-                    <button type="button" onClick={() => onEdit(entry)} disabled={loading}>
-                      ✏ Editar
+                    <button type="button" className="button-small" onClick={() => onEdit(entry)} disabled={loading}>
+                      Editar
                     </button>
-                    <button type="button" onClick={() => onDelete(entry.id)} disabled={loading}>
-                      🗑 Excluir
+                    <button type="button" className="button-small button-danger" onClick={() => onDelete(entry.id)} disabled={loading}>
+                      Excluir
                     </button>
                   </div>
                 </td>

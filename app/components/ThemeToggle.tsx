@@ -3,7 +3,11 @@
 import { useEffect, useState } from "react";
 import { applyTheme, getStoredTheme, ThemeMode } from "../../lib/theme";
 
-export function ThemeToggle() {
+type ThemeToggleProps = {
+  compact?: boolean;
+};
+
+export function ThemeToggle({ compact = false }: ThemeToggleProps) {
   const [theme, setTheme] = useState<ThemeMode>("light");
 
   useEffect(() => {
@@ -27,8 +31,14 @@ export function ThemeToggle() {
   }
 
   return (
-    <button type="button" className="theme-toggle" onClick={toggleTheme}>
-      {theme === "dark" ? "Modo claro" : "Modo noturno"}
+    <button
+      type="button"
+      className={compact ? "theme-toggle compact" : "theme-toggle"}
+      onClick={toggleTheme}
+      title={theme === "dark" ? "Ativar modo claro" : "Ativar modo noturno"}
+      aria-label={theme === "dark" ? "Ativar modo claro" : "Ativar modo noturno"}
+    >
+      {compact ? (theme === "dark" ? "☀" : "☾") : theme === "dark" ? "Modo claro" : "Modo noturno"}
     </button>
   );
 }

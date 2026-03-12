@@ -23,10 +23,7 @@ type MovementSectionProps = {
 export function MovementSection({ form, loading, status, onChange, onSubmit, onRefresh }: MovementSectionProps) {
   return (
     <section className="card">
-      <h2 className="section-title">
-        <span aria-hidden="true">↔</span>
-        <span>Registrar Movimentacao</span>
-      </h2>
+      <h2>Registrar Movimentacao</h2>
       <form onSubmit={onSubmit}>
         <div className="grid">
           <label>
@@ -67,7 +64,7 @@ export function MovementSection({ form, loading, status, onChange, onSubmit, onR
           <button type="submit" disabled={loading}>
             {loading ? "Salvando..." : "Registrar"}
           </button>
-          <button type="button" onClick={onRefresh} disabled={loading}>
+          <button type="button" className="button-secondary" onClick={onRefresh} disabled={loading}>
             Atualizar Carteira
           </button>
         </div>

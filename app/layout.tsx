@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import "./globals.css";
-import { ThemeToggle } from "./components/ThemeToggle";
 
 export const metadata: Metadata = {
   title: "DinEx Frontend",
@@ -17,7 +16,6 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
               "(function(){try{var key='dinex-theme';var value=localStorage.getItem(key);if(value==='dark'||value==='light'){document.documentElement.dataset.theme=value;}}catch(e){}})();"
           }}
         />
-        <ThemeToggle />
         {children}
       </body>
     </html>

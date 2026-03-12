@@ -180,10 +180,7 @@ export function PortfolioSection({
   return (
     <>
       <section className="card">
-        <h2 className="section-title">
-          <span aria-hidden="true">💼</span>
-          <span>Carteira</span>
-        </h2>
+        <h2>Carteira</h2>
         <div className="grid portfolio-filters">
           <label>
             Buscar ativo
@@ -270,10 +267,7 @@ export function PortfolioSection({
       </section>
 
       <section className="card">
-        <h2 className="section-title">
-          <span aria-hidden="true">📈</span>
-          <span>Sankey da Carteira</span>
-        </h2>
+        <h2>Sankey da Carteira</h2>
         <div className="toolbar">
           <p className="status">Proporção percentual por classe e ativo.</p>
           <div className="inline-actions sankey-controls">
@@ -320,7 +314,7 @@ export function PortfolioSection({
               theme={{
                 labels: {
                   text: {
-                    fill: "var(--sankey-label-color)"
+                    fill: "var(--sankey-label-strong-color)"
                   }
                 },
                 tooltip: {
@@ -344,7 +338,7 @@ export function PortfolioSection({
               labelPosition="outside"
               labelOrientation="horizontal"
               labelPadding={12}
-              labelTextColor="var(--sankey-label-color)"
+              labelTextColor="var(--sankey-label-strong-color)"
             />
           ) : (
             <p className="status">Sem dados suficientes para gerar o Sankey.</p>
@@ -354,10 +348,7 @@ export function PortfolioSection({
 
       {showReconcile && (
         <section className="card">
-          <h2 className="section-title">
-            <span aria-hidden="true">✅</span>
-            <span>Reconciliação com relatório de posição</span>
-          </h2>
+          <h2>Reconciliação com relatório de posição</h2>
           <form onSubmit={onReconcile}>
             <div className="grid">
               <label>

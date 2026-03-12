@@ -20,7 +20,6 @@ import {
   StatementEntryType,
   StoredSession
 } from "../../lib/types";
-import { UserSessionCard } from "./components/UserSessionCard";
 import { TabNavigation, DashboardTab } from "./components/TabNavigation";
 import { MovementSection } from "./components/MovementSection";
 import { StatementSection } from "./components/StatementSection";
@@ -28,6 +27,7 @@ import { CorporateEventsSection } from "./components/CorporateEventsSection";
 import { PortfolioSection } from "./components/PortfolioSection";
 import { IncomeTaxSection } from "./components/IncomeTaxSection";
 import { AssetCatalogSection } from "./components/AssetCatalogSection";
+import { ThemeToggle } from "../components/ThemeToggle";
 type DashboardMode = "simple" | "advanced";
 
 type MovementForm = {
@@ -139,6 +139,8 @@ export default function DashboardPage() {
   const [assetCatalogLoading, setAssetCatalogLoading] = useState(false);
   const [reconcileLoading, setReconcileLoading] = useState(false);
   const [status, setStatus] = useState("Carregando sessao...");
+  const [statusHistory, setStatusHistory] = useState<string[]>(["Carregando sessao..."]);
+  const [statusFrame, setStatusFrame] = useState(0);
   const uiLocked = importLoading;
   const primaryTabs: DashboardTab[] =
     dashboardMode === "advanced"
@@ -297,6 +299,25 @@ export default function DashboardPage() {
       setActiveTab("statement");
     }
   }, [activeTab, availableTabs]);
+
+  useEffect(() => {
+    setStatusHistory((previous) => {
+      const trimmed = status.trim();
+      if (trimmed.length === 0) {
+        return previous;
+      }
+
+      if (previous[previous.length - 1] === trimmed) {
+        return previous;
+      }
+
+      setStatusFrame((value) => value + 1);
+      return [...previous, trimmed].slice(-10);
+    });
+  }, [status]);
+
+  const currentStatus = statusHistory[statusHistory.length - 1] ?? status;
+  const previousStatus = statusHistory.length > 1 ? statusHistory[statusHistory.length - 2] : null;
 
   async function onLogout() {
     if (session) {
@@ -795,185 +816,216 @@ export default function DashboardPage() {
   }
 
   return (
-    <main>
-      <h1 className="section-title">
-        <span aria-hidden="true">📱</span>
-        <span>DinEx Frontend</span>
-      </h1>
-      <p>Painel autenticado.</p>
+    <main className="app-shell">
+      <header className="top-bar">
+        <div className="top-bar-brand">
+          <h1>DinEx</h1>
+          <p>Painel de investimentos</p>
+        </div>
+        <div className="top-bar-actions">
+          <ThemeToggle compact />
+          <button type="button" className="button-secondary tab-button-logout" onClick={onLogout}>
+            <span className="tab-button-content">
+              <span className="tab-icon-solid" aria-hidden="true">
+                <svg viewBox="0 0 20 20">
+                  <path d="M3 3h7v2H5v10h5v2H3a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1zm10.7 3.3L12.3 7.7 14.6 10l-2.3 2.3 1.4 1.4 3.7-3.7-3.7-3.7zM7 9h8v2H7V9z" />
+                </svg>
+              </span>
+              <span>Sair</span>
+            </span>
+          </button>
+        </div>
+      </header>
       <fieldset className="dashboard-lock-zone" disabled={uiLocked}>
-        <section className="card">
-          <div className="toolbar">
-              <div>
-              <h2 className="section-title">
-                <span aria-hidden="true">⚙</span>
-                <span>Modo de uso</span>
-              </h2>
-              <p className="status">Simples para uso diário. Avançado para manutenção e lançamentos técnicos.</p>
-            </div>
-            <div className="inline-actions">
-              <button
-                type="button"
-                className={dashboardMode === "simple" ? "tab-button active" : "tab-button"}
-                onClick={() => setDashboardMode("simple")}
-              >
-                Modo Simples
-              </button>
-              <button
-                type="button"
-                className={dashboardMode === "advanced" ? "tab-button active" : "tab-button"}
-                onClick={() => setDashboardMode("advanced")}
-              >
-                Modo Avançado
-              </button>
-            </div>
-          </div>
-        </section>
-        <UserSessionCard currentUser={currentUser} onLogout={onLogout} />
-        {isAdvancedMode && (
-          <section className="card">
-            <div className="toolbar">
-              <div>
-                <h2 className="section-title">
-                  <span aria-hidden="true">🧹</span>
-                  <span>Zerar dados de investimento</span>
-                </h2>
-                <p className="status">Use os botoes separados para limpar eventos ou carteira/extrato.</p>
-              </div>
-              <div className="row-actions">
-                <button type="button" onClick={onClearCorporateEvents} disabled={statementLoading || importLoading || corporateEventLoading}>
-                  Zerar Eventos
-                </button>
-                <button type="button" onClick={onClearInvestmentData} disabled={statementLoading || importLoading || corporateEventLoading}>
-                  Zerar Carteira/Extrato
-                </button>
-              </div>
-            </div>
+        <div className="dashboard-layout">
+          <TabNavigation activeTab={activeTab} onChange={setActiveTab} primaryTabs={primaryTabs} secondaryTabs={secondaryTabs} />
+          <section className="dashboard-content">
+            <section className="overview-panels">
+              <section className="card">
+                <div className="usage-panel">
+                  <div className="usage-header">
+                    <h2>Visão de uso</h2>
+                    <div className="inline-actions mode-switch">
+                      <button
+                        type="button"
+                        className={dashboardMode === "simple" ? "tab-button active" : "tab-button"}
+                        onClick={() => setDashboardMode("simple")}
+                      >
+                        Modo Simples
+                      </button>
+                      <button
+                        type="button"
+                        className={dashboardMode === "advanced" ? "tab-button active" : "tab-button"}
+                        onClick={() => setDashboardMode("advanced")}
+                      >
+                        Modo Avançado
+                      </button>
+                    </div>
+                  </div>
+                  <p className="status usage-status">Escolha o modo do sistema: simples para uso diário, avançado para manutenção.</p>
+                </div>
+              </section>
+
+              <section className="card status-card" aria-live="polite">
+                <div className="status-card-header">
+                  <h3>Status do sistema</h3>
+                  <span className="status-chip">Operacoes</span>
+                </div>
+                <div className="status-history">
+                  <div key={`current-${statusFrame}-${currentStatus}`} className="status-waterfall-item status-waterfall-current">
+                    <span className="status-waterfall-label">Atual</span>
+                    <p className="status status-primary">{currentStatus}</p>
+                  </div>
+                  {previousStatus && (
+                    <div key={`previous-${statusFrame}-${previousStatus}`} className="status-waterfall-item status-waterfall-previous">
+                      <span className="status-waterfall-label">Anterior</span>
+                      <p className="status status-secondary">{previousStatus}</p>
+                    </div>
+                  )}
+                </div>
+              </section>
+            </section>
+
+              {isAdvancedMode && (
+                <section className="card">
+                  <div className="reset-panel">
+                    <h2>Zerar dados de investimento</h2>
+                    <div className="reset-row">
+                      <p className="status reset-label">Use os botoes separados para limpar eventos ou carteira/extrato.</p>
+                      <div className="row-actions reset-actions">
+                      <button type="button" onClick={onClearCorporateEvents} disabled={statementLoading || importLoading || corporateEventLoading}>
+                        Zerar Eventos
+                      </button>
+                      <button type="button" onClick={onClearInvestmentData} disabled={statementLoading || importLoading || corporateEventLoading}>
+                        Zerar Carteira/Extrato
+                      </button>
+                      </div>
+                    </div>
+                  </div>
+                </section>
+              )}
+
+            {activeTab === "movements" && (
+              <MovementSection
+                form={form}
+                loading={loading}
+                status={status}
+                onChange={setForm}
+                onSubmit={onSubmit}
+                onRefresh={async () => {
+                  if (!session) {
+                    setStatus("Sessao nao encontrada. Faca login.");
+                    return;
+                  }
+
+                  await loadPortfolio(session);
+                  setStatus("Carteira atualizada.");
+                }}
+              />
+            )}
+
+            {activeTab === "statement" && (
+              <StatementSection
+                form={statementForm}
+                entries={statementEntries}
+                entryTypeOptions={entryTypeOptions}
+                onChange={setStatementForm}
+                showManualEntry={isAdvancedMode}
+                importState={{
+                  importLoading,
+                  statementLoading,
+                  onImport: onImportSpreadsheets,
+                  onStatementSubmit: onSubmitStatement,
+                  onRefresh: async () => {
+                    if (!session) {
+                      setStatus("Sessao nao encontrada. Faca login.");
+                      return;
+                    }
+
+                    await loadStatement(session);
+                    setStatus("Extrato atualizado.");
+                  },
+                  onImportFileChange: setImportFile
+                }}
+              />
+            )}
+
+            {activeTab === "corporate-events" && (
+              <CorporateEventsSection
+                form={corporateEventForm}
+                events={corporateEvents}
+                loading={corporateEventLoading}
+                editingEventId={editingCorporateEventId}
+                onChange={setCorporateEventForm}
+                onSubmit={onSubmitCorporateEvent}
+                onRefresh={async () => {
+                  if (!session) {
+                    setStatus("Sessao nao encontrada. Faca login.");
+                    return;
+                  }
+
+                  await loadCorporateEvents(session);
+                  setStatus("Eventos corporativos atualizados.");
+                }}
+                onEdit={onEditCorporateEvent}
+                onDelete={onDeleteCorporateEvent}
+                onCancelEdit={onCancelCorporateEventEdit}
+              />
+            )}
+
+            {activeTab === "portfolio" && (
+              <PortfolioSection
+                positions={positions}
+                assetDefinitions={assetDefinitions}
+                reconcileResult={reconcileResult}
+                reconcileLoading={reconcileLoading}
+                onReconcile={onReconcilePortfolio}
+                onReconcileFileChange={setReconcileFile}
+                showReconcile={isAdvancedMode}
+              />
+            )}
+
+            {activeTab === "income-tax" && (
+              <IncomeTaxSection
+                summary={incomeTaxSummary}
+                assetDefinitions={assetDefinitions}
+                statementEntries={statementEntries}
+                onRefresh={async () => {
+                  if (!session) {
+                    setStatus("Sessao nao encontrada. Faca login.");
+                    return;
+                  }
+
+                  await loadIncomeTaxSummary(session);
+                  setStatus("Base de IR atualizada.");
+                }}
+              />
+            )}
+
+            {activeTab === "assets" && (
+              <AssetCatalogSection
+                form={assetCatalogForm}
+                assets={assetDefinitions}
+                loading={assetCatalogLoading}
+                editingAssetId={editingAssetDefinitionId}
+                onChange={setAssetCatalogForm}
+                onSubmit={onSubmitAssetCatalog}
+                onEdit={onEditAssetDefinition}
+                onCancelEdit={onCancelAssetDefinitionEdit}
+                onDelete={onDeleteAssetDefinition}
+                onRefresh={async () => {
+                  if (!session) {
+                    setStatus("Sessao nao encontrada. Faca login.");
+                    return;
+                  }
+
+                  await loadAssetDefinitions(session);
+                  setStatus("Cadastro de ativos atualizado.");
+                }}
+              />
+            )}
           </section>
-        )}
-        <TabNavigation activeTab={activeTab} onChange={setActiveTab} primaryTabs={primaryTabs} secondaryTabs={secondaryTabs} />
-
-        {activeTab === "movements" && (
-          <MovementSection
-            form={form}
-            loading={loading}
-            status={status}
-            onChange={setForm}
-            onSubmit={onSubmit}
-            onRefresh={async () => {
-              if (!session) {
-                setStatus("Sessao nao encontrada. Faca login.");
-                return;
-              }
-
-              await loadPortfolio(session);
-              setStatus("Carteira atualizada.");
-            }}
-          />
-        )}
-
-        {activeTab === "statement" && (
-          <StatementSection
-            form={statementForm}
-            entries={statementEntries}
-            entryTypeOptions={entryTypeOptions}
-            onChange={setStatementForm}
-            showManualEntry={isAdvancedMode}
-            importState={{
-              importLoading,
-              statementLoading,
-              onImport: onImportSpreadsheets,
-              onStatementSubmit: onSubmitStatement,
-              onRefresh: async () => {
-                if (!session) {
-                  setStatus("Sessao nao encontrada. Faca login.");
-                  return;
-                }
-
-                await loadStatement(session);
-                setStatus("Extrato atualizado.");
-              },
-              onImportFileChange: setImportFile
-            }}
-          />
-        )}
-
-        {activeTab === "corporate-events" && (
-          <CorporateEventsSection
-            form={corporateEventForm}
-            events={corporateEvents}
-            loading={corporateEventLoading}
-            editingEventId={editingCorporateEventId}
-            onChange={setCorporateEventForm}
-            onSubmit={onSubmitCorporateEvent}
-            onRefresh={async () => {
-              if (!session) {
-                setStatus("Sessao nao encontrada. Faca login.");
-                return;
-              }
-
-              await loadCorporateEvents(session);
-              setStatus("Eventos corporativos atualizados.");
-            }}
-            onEdit={onEditCorporateEvent}
-            onDelete={onDeleteCorporateEvent}
-            onCancelEdit={onCancelCorporateEventEdit}
-          />
-        )}
-
-        {activeTab === "portfolio" && (
-          <PortfolioSection
-            positions={positions}
-            assetDefinitions={assetDefinitions}
-            reconcileResult={reconcileResult}
-            reconcileLoading={reconcileLoading}
-            onReconcile={onReconcilePortfolio}
-            onReconcileFileChange={setReconcileFile}
-            showReconcile={isAdvancedMode}
-          />
-        )}
-
-        {activeTab === "income-tax" && (
-          <IncomeTaxSection
-            summary={incomeTaxSummary}
-            assetDefinitions={assetDefinitions}
-            statementEntries={statementEntries}
-            onRefresh={async () => {
-              if (!session) {
-                setStatus("Sessao nao encontrada. Faca login.");
-                return;
-              }
-
-              await loadIncomeTaxSummary(session);
-              setStatus("Base de IR atualizada.");
-            }}
-          />
-        )}
-
-        {activeTab === "assets" && (
-          <AssetCatalogSection
-            form={assetCatalogForm}
-            assets={assetDefinitions}
-            loading={assetCatalogLoading}
-            editingAssetId={editingAssetDefinitionId}
-            onChange={setAssetCatalogForm}
-            onSubmit={onSubmitAssetCatalog}
-            onEdit={onEditAssetDefinition}
-            onCancelEdit={onCancelAssetDefinitionEdit}
-            onDelete={onDeleteAssetDefinition}
-            onRefresh={async () => {
-              if (!session) {
-                setStatus("Sessao nao encontrada. Faca login.");
-                return;
-              }
-
-              await loadAssetDefinitions(session);
-              setStatus("Cadastro de ativos atualizado.");
-            }}
-          />
-        )}
-
-        <p className="status">{status}</p>
+        </div>
       </fieldset>
       {uiLocked && (
         <div className="screen-lock" role="status" aria-live="polite">

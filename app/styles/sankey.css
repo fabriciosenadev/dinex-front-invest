@@ -1,0 +1,13 @@
+.sankey-chart-wrap {
+  background: var(--sankey-bg);
+  border-color: var(--sankey-border);
+}
+
+.sankey-chart-wrap svg text {
+  fill: var(--sankey-label-strong-color) !important;
+  font-weight: 600;
+}
+
+.sankey-chart-wrap svg .nivo-sankey__link {
+  opacity: 0.9;
+}

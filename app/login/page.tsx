@@ -3,6 +3,7 @@
 import { FormEvent, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { authenticate, persistSession, readStoredSession } from "../../lib/auth";
+import { ThemeToggle } from "../components/ThemeToggle";
 
 type LoginForm = {
   email: string;
@@ -10,8 +11,8 @@ type LoginForm = {
 };
 
 const defaultLoginForm: LoginForm = {
-  email: "test@email.com",
-  password: "Senha@123"
+  email: "",
+  password: ""
 };
 
 export default function LoginPage() {
@@ -45,26 +46,28 @@ export default function LoginPage() {
   }
 
   return (
-    <main>
-      <h1 className="section-title">
-        <span aria-hidden="true">🔐</span>
-        <span>DinEx Frontend</span>
-      </h1>
-      <p>Acesso ao painel autenticado.</p>
+    <main className="auth-shell">
+      <header className="page-header">
+        <div className="auth-header-row">
+          <div>
+            <h1>DinEx Frontend</h1>
+            <p>Acesso ao painel autenticado.</p>
+          </div>
+          <ThemeToggle compact />
+        </div>
+      </header>
 
       <section className="card">
-        <h2 className="section-title">
-          <span aria-hidden="true">👤</span>
-          <span>Login</span>
-        </h2>
+        <h2>Login</h2>
         <form onSubmit={onSubmit}>
-          <div className="grid">
+          <div className="grid login-grid">
             <label>
               E-mail
               <input
                 type="email"
                 value={form.email}
                 onChange={(e) => setForm({ ...form, email: e.target.value })}
+                placeholder="exemplo@email.com"
                 required
               />
             </label>
@@ -75,12 +78,13 @@ export default function LoginPage() {
                 type="password"
                 value={form.password}
                 onChange={(e) => setForm({ ...form, password: e.target.value })}
+                placeholder="Sua senha"
                 required
               />
             </label>
           </div>
 
-          <div className="row-actions">
+          <div className="row-actions login-actions">
             <button type="submit" disabled={loading}>
               {loading ? "Entrando..." : "Entrar"}
             </button>

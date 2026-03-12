@@ -185,25 +185,22 @@ export function IncomeTaxSection({ summary, assetDefinitions, statementEntries, 
 
   return (
     <section className="card">
-      <div className="toolbar">
-        <div>
-          <h2 className="section-title">
-            <span aria-hidden="true">📊</span>
-            <span>Base para Imposto de Renda</span>
-          </h2>
-          <p className="status">
-            {assetTab === "acao"
-              ? "Consolidação por ano e por empresa (somando os ativos da mesma empresa)."
-              : "Consolidação por ano e por ativo (foco no código de negociação)."}
-          </p>
+      <div className="income-tax-header">
+        <div className="income-tax-header-row">
+          <h2>Base para Imposto de Renda</h2>
+          <button type="button" className="button-secondary" onClick={onRefresh}>
+            Atualizar Base IR
+          </button>
         </div>
-        <button type="button" onClick={onRefresh}>
-          Atualizar Base IR
-        </button>
+        <p className="status">
+          {assetTab === "acao"
+            ? "Consolidação por ano e por empresa (somando os ativos da mesma empresa)."
+            : "Consolidação por ano e por ativo (foco no código de negociação)."}
+        </p>
       </div>
 
       {summary.length > 0 && (
-        <div className="grid portfolio-filters">
+        <div className="grid portfolio-filters income-tax-year-filter">
           <label>
             Ano-base
             <select value={selectedYear ?? ""} onChange={(event) => setSelectedYear(Number(event.target.value))}>

@@ -12,15 +12,12 @@ export function UserSessionCard({ currentUser, onLogout }: UserSessionCardProps)
     <section className="card">
       <div className="toolbar">
         <div>
-          <h2 className="section-title">
-            <span aria-hidden="true">👤</span>
-            <span>Usuario autenticado</span>
-          </h2>
+          <h2>Usuario autenticado</h2>
           <p className="status">
             {currentUser?.fullName} ({currentUser?.email})
           </p>
         </div>
-        <button type="button" onClick={onLogout}>
+        <button type="button" className="button-secondary" onClick={onLogout}>
           Sair
         </button>
       </div>

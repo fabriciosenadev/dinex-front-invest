@@ -45,11 +45,8 @@ export function AssetCatalogSection({
 }: AssetCatalogSectionProps) {
   return (
     <section className="card">
-      <h2 className="section-title">
-        <span aria-hidden="true">🏷</span>
-        <span>Cadastro de Ativos</span>
-      </h2>
-      <form className="grid" onSubmit={onSubmit}>
+      <h2>Cadastro de Ativos</h2>
+      <form className="grid form-grid-two" onSubmit={onSubmit}>
         <label>
           Codigo
           <input
@@ -78,11 +75,11 @@ export function AssetCatalogSection({
             {editingAssetId ? "Salvar Edicao" : "Salvar Ativo"}
           </button>
           {editingAssetId && (
-            <button type="button" onClick={onCancelEdit} disabled={loading}>
+            <button type="button" className="button-secondary" onClick={onCancelEdit} disabled={loading}>
               Cancelar
             </button>
           )}
-          <button type="button" onClick={onRefresh} disabled={loading}>
+          <button type="button" className="button-secondary" onClick={onRefresh} disabled={loading}>
             Atualizar Ativos
           </button>
         </div>
@@ -106,11 +103,11 @@ export function AssetCatalogSection({
                 <td>{asset.notes?.trim() ? asset.notes : "-"}</td>
                 <td>
                   <div className="inline-actions">
-                    <button type="button" onClick={() => onEdit(asset)} disabled={loading}>
-                      ✏ Editar
+                    <button type="button" className="button-small" onClick={() => onEdit(asset)} disabled={loading}>
+                      Editar
                     </button>
-                    <button type="button" onClick={() => onDelete(asset.id)} disabled={loading}>
-                      🗑 Excluir
+                    <button type="button" className="button-small button-danger" onClick={() => onDelete(asset.id)} disabled={loading}>
+                      Excluir
                     </button>
                   </div>
                 </td>
