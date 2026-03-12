@@ -318,6 +318,14 @@ td {
   background: var(--sankey-bg);
 }
 
+.sankey-controls {
+  align-items: flex-end;
+}
+
+.sankey-controls label {
+  min-width: 150px;
+}
+
 .portfolio-filters {
   margin-bottom: 10px;
 }

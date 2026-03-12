@@ -31,6 +31,9 @@ export function PortfolioSection({
   const [sortBy, setSortBy] = useState<"asset" | "quantity-desc" | "quantity-asc">("asset");
   const [reconcileSearch, setReconcileSearch] = useState("");
   const [onlyDivergent, setOnlyDivergent] = useState(false);
+  const [sankeyMode, setSankeyMode] = useState<"class-asset" | "class-only" | "asset-only">("class-asset");
+  const [sankeyClassFilter, setSankeyClassFilter] = useState<"all" | AssetClass>("all");
+  const [sankeyMaxAssets, setSankeyMaxAssets] = useState(15);
 
   const portfolioView = useMemo(() => {
     const search = portfolioSearch.trim().toUpperCase();
@@ -92,12 +95,22 @@ export function PortfolioSection({
   }, [reconcileResult, reconcileSearch, onlyDivergent]);
 
   const sankeyData = useMemo(() => {
-    const source = portfolioView.filtered;
+    const source = positions
+      .map((position) => ({
+        ...position,
+        assetClass: classifyAsset(position.assetSymbol, assetDefinitions),
+        value: position.quantity * position.averagePrice
+      }))
+      .filter((position) => position.value > 0)
+      .filter((position) => (sankeyClassFilter === "all" ? true : position.assetClass === sankeyClassFilter))
+      .sort((left, right) => right.value - left.value)
+      .slice(0, sankeyMaxAssets);
+
     if (source.length === 0) {
       return { nodes: [], links: [] };
     }
 
-    const totalValue = source.reduce((acc, position) => acc + (position.quantity * position.averagePrice), 0);
+    const totalValue = source.reduce((acc, position) => acc + position.value, 0);
     if (totalValue <= 0) {
       return { nodes: [], links: [] };
     }
@@ -108,15 +121,11 @@ export function PortfolioSection({
     const assetNodeIds = new Set<string>();
 
     for (const position of source) {
-      const value = position.quantity * position.averagePrice;
-      if (value <= 0) {
-        continue;
-      }
-
       const classLabel = classifyAssetLabel(position.assetSymbol, assetDefinitions);
       const classKey = `classe:${classLabel}`;
       const assetKey = `ativo:${position.assetSymbol}`;
-      const assetClass = classifyAsset(position.assetSymbol, assetDefinitions);
+      const assetClass = position.assetClass;
+      const percent = toPercent(position.value, totalValue);
 
       if (!classNodeIds.has(classKey)) {
         classNodeIds.add(classKey);
@@ -128,24 +137,45 @@ export function PortfolioSection({
         nodes.push({ id: assetKey, classLabel: assetClass });
       }
 
-      links.push({ source: classKey, target: assetKey, value: toPercent(value, totalValue) });
-    }
-
-    const classTotals = new Map<string, number>();
-    for (const link of links) {
-      if (!link.source.startsWith("classe:")) {
-        continue;
+      if (sankeyMode === "class-asset") {
+        links.push({ source: classKey, target: assetKey, value: percent });
       }
 
-      classTotals.set(link.source, (classTotals.get(link.source) ?? 0) + link.value);
+      if (sankeyMode === "asset-only") {
+        links.push({ source: "Carteira", target: assetKey, value: percent });
+      }
     }
 
-    for (const [classKey, total] of classTotals.entries()) {
-      links.push({ source: "Carteira", target: classKey, value: total });
+    if (sankeyMode === "class-only" || sankeyMode === "class-asset") {
+      const classTotals = new Map<string, number>();
+      for (const position of source) {
+        const classLabel = classifyAssetLabel(position.assetSymbol, assetDefinitions);
+        const classKey = `classe:${classLabel}`;
+        classTotals.set(classKey, (classTotals.get(classKey) ?? 0) + toPercent(position.value, totalValue));
+      }
+
+      for (const [classKey, total] of classTotals.entries()) {
+        links.push({ source: "Carteira", target: classKey, value: total });
+      }
+    }
+
+    if (sankeyMode === "class-only") {
+      return {
+        nodes: nodes.filter((node) => node.id === "Carteira" || node.id.startsWith("classe:")),
+        links
+      };
     }
 
     return { nodes, links };
-  }, [portfolioView.filtered, assetDefinitions]);
+  }, [positions, assetDefinitions, sankeyClassFilter, sankeyMaxAssets, sankeyMode]);
+
+  const sankeyHeight = useMemo(() => {
+    if (sankeyData.nodes.length === 0) {
+      return 420;
+    }
+
+    return Math.max(420, Math.min(900, 220 + sankeyData.nodes.length * 20));
+  }, [sankeyData.nodes.length]);
 
   return (
     <>
@@ -236,8 +266,42 @@ export function PortfolioSection({
 
       <section className="card">
         <h2>Sankey da Carteira</h2>
-        <p className="status">Proporção percentual (100%) por classe e ativo com base no filtro atual.</p>
-        <div className="sankey-chart-wrap">
+        <div className="toolbar">
+          <p className="status">Proporção percentual por classe e ativo.</p>
+          <div className="inline-actions sankey-controls">
+            <label>
+              Diagrama
+              <select value={sankeyMode} onChange={(event) => setSankeyMode(event.target.value as "class-asset" | "class-only" | "asset-only")}>
+                <option value="class-asset">Classe {'>'} Ativo</option>
+                <option value="class-only">Somente classe</option>
+                <option value="asset-only">Somente ativo</option>
+              </select>
+            </label>
+            <label>
+              Categoria
+              <select value={sankeyClassFilter} onChange={(event) => setSankeyClassFilter(event.target.value as "all" | AssetClass)}>
+                <option value="all">Completo</option>
+                <option value="acao">Ações</option>
+                <option value="fii">FIIs</option>
+                <option value="etf">ETFs</option>
+                <option value="rf">Renda fixa</option>
+                <option value="direito">Direitos</option>
+                <option value="bdr">BDRs</option>
+                <option value="outro">Outros</option>
+              </select>
+            </label>
+            <label>
+              Ativos
+              <select value={sankeyMaxAssets} onChange={(event) => setSankeyMaxAssets(Number(event.target.value))}>
+                <option value={10}>Top 10</option>
+                <option value={15}>Top 15</option>
+                <option value={25}>Top 25</option>
+                <option value={50}>Top 50</option>
+              </select>
+            </label>
+          </div>
+        </div>
+        <div className="sankey-chart-wrap" style={{ height: `${sankeyHeight}px` }}>
           {sankeyData.links.length > 0 ? (
             <ResponsiveSankey
               data={sankeyData}
@@ -266,9 +330,9 @@ export function PortfolioSection({
               nodeThickness={18}
               nodeSpacing={18}
               nodeBorderWidth={0}
-              linkOpacity={0.72}
+              linkOpacity={0.88}
               linkHoverOthersOpacity={0.2}
-              enableLinkGradient
+              enableLinkGradient={false}
               labelPosition="outside"
               labelOrientation="horizontal"
               labelPadding={12}
@@ -379,7 +443,7 @@ function getClassColor(assetClass: AssetClass) {
     direito: "#ff7f0e",
     etf: "#17becf",
     bdr: "#e377c2",
-    outro: "#7f7f7f"
+    outro: "#4fa3ff"
   };
 
   return colors[assetClass];
