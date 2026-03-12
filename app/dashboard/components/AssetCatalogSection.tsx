@@ -45,7 +45,10 @@ export function AssetCatalogSection({
 }: AssetCatalogSectionProps) {
   return (
     <section className="card">
-      <h2>Cadastro de Ativos</h2>
+      <h2 className="section-title">
+        <span aria-hidden="true">🏷</span>
+        <span>Cadastro de Ativos</span>
+      </h2>
       <form className="grid" onSubmit={onSubmit}>
         <label>
           Codigo
@@ -85,38 +88,42 @@ export function AssetCatalogSection({
         </div>
       </form>
 
-      <table>
-        <thead>
-          <tr>
-            <th>Codigo</th>
-            <th>Tipo</th>
-            <th>Observacoes</th>
-            <th>Acoes</th>
-          </tr>
-        </thead>
-        <tbody>
-          {assets.map((asset) => (
-            <tr key={asset.id}>
-              <td>{asset.symbol}</td>
-              <td>{mapTypeLabel(asset.type)}</td>
-              <td>{asset.notes?.trim() ? asset.notes : "-"}</td>
-              <td>
-                <button type="button" onClick={() => onEdit(asset)} disabled={loading}>
-                  Editar
-                </button>
-                <button type="button" onClick={() => onDelete(asset.id)} disabled={loading}>
-                  Excluir
-                </button>
-              </td>
-            </tr>
-          ))}
-          {assets.length === 0 && (
+      <div className="table-scroll">
+        <table>
+          <thead>
             <tr>
-              <td colSpan={4}>Nenhum ativo cadastrado ainda.</td>
+              <th>Codigo</th>
+              <th>Tipo</th>
+              <th>Observacoes</th>
+              <th>Acoes</th>
             </tr>
-          )}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {assets.map((asset) => (
+              <tr key={asset.id}>
+                <td>{asset.symbol}</td>
+                <td>{mapTypeLabel(asset.type)}</td>
+                <td>{asset.notes?.trim() ? asset.notes : "-"}</td>
+                <td>
+                  <div className="inline-actions">
+                    <button type="button" onClick={() => onEdit(asset)} disabled={loading}>
+                      ✏ Editar
+                    </button>
+                    <button type="button" onClick={() => onDelete(asset.id)} disabled={loading}>
+                      🗑 Excluir
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            ))}
+            {assets.length === 0 && (
+              <tr>
+                <td colSpan={4}>Nenhum ativo cadastrado ainda.</td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </div>
     </section>
   );
 }

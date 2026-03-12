@@ -180,7 +180,10 @@ export function PortfolioSection({
   return (
     <>
       <section className="card">
-        <h2>Carteira</h2>
+        <h2 className="section-title">
+          <span aria-hidden="true">💼</span>
+          <span>Carteira</span>
+        </h2>
         <div className="grid portfolio-filters">
           <label>
             Buscar ativo
@@ -226,46 +229,51 @@ export function PortfolioSection({
           Ativos exibidos: {portfolioView.filtered.length} | Quantidade total: {portfolioView.total.toFixed(2)} | Fracionados:{" "}
           {portfolioView.fractionalCount}
         </p>
-        <table>
-          <thead>
-            <tr>
-              <th>Ativo</th>
-              <th>Classe</th>
-              <th>Quantidade</th>
-              <th>Preco Medio</th>
-              <th>Valor Total</th>
-              <th>Moeda</th>
-            </tr>
-          </thead>
-          <tbody>
-            {portfolioView.filtered.map((position) => (
-              <tr key={position.assetSymbol} className={isFractional(position.quantity) ? "row-fractional" : undefined}>
-                <td>{position.assetSymbol}</td>
-                <td>
-                  <span className={`badge-class badge-${classifyAsset(position.assetSymbol, assetDefinitions)}`}>
-                    {classifyAssetLabel(position.assetSymbol, assetDefinitions)}
-                  </span>
-                </td>
-                <td>
-                  {position.quantity}
-                  {isFractional(position.quantity) && <span className="badge-warn">fracionado</span>}
-                </td>
-                <td>{formatMoney(position.averagePrice, position.currency)}</td>
-                <td>{formatMoney(position.quantity * position.averagePrice, position.currency)}</td>
-                <td>{position.currency}</td>
-              </tr>
-            ))}
-            {portfolioView.filtered.length === 0 && (
+        <div className="table-scroll">
+          <table>
+            <thead>
               <tr>
-                <td colSpan={6}>Sem posicoes ainda.</td>
+                <th>Ativo</th>
+                <th>Classe</th>
+                <th>Quantidade</th>
+                <th>Preco Medio</th>
+                <th>Valor Total</th>
+                <th>Moeda</th>
               </tr>
-            )}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {portfolioView.filtered.map((position) => (
+                <tr key={position.assetSymbol} className={isFractional(position.quantity) ? "row-fractional" : undefined}>
+                  <td>{position.assetSymbol}</td>
+                  <td>
+                    <span className={`badge-class badge-${classifyAsset(position.assetSymbol, assetDefinitions)}`}>
+                      {classifyAssetLabel(position.assetSymbol, assetDefinitions)}
+                    </span>
+                  </td>
+                  <td>
+                    {position.quantity}
+                    {isFractional(position.quantity) && <span className="badge-warn">fracionado</span>}
+                  </td>
+                  <td>{formatMoney(position.averagePrice, position.currency)}</td>
+                  <td>{formatMoney(position.quantity * position.averagePrice, position.currency)}</td>
+                  <td>{position.currency}</td>
+                </tr>
+              ))}
+              {portfolioView.filtered.length === 0 && (
+                <tr>
+                  <td colSpan={6}>Sem posicoes ainda.</td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
       </section>
 
       <section className="card">
-        <h2>Sankey da Carteira</h2>
+        <h2 className="section-title">
+          <span aria-hidden="true">📈</span>
+          <span>Sankey da Carteira</span>
+        </h2>
         <div className="toolbar">
           <p className="status">Proporção percentual por classe e ativo.</p>
           <div className="inline-actions sankey-controls">
@@ -346,7 +354,10 @@ export function PortfolioSection({
 
       {showReconcile && (
         <section className="card">
-          <h2>Reconciliação com relatório de posição</h2>
+          <h2 className="section-title">
+            <span aria-hidden="true">✅</span>
+            <span>Reconciliação com relatório de posição</span>
+          </h2>
           <form onSubmit={onReconcile}>
             <div className="grid">
               <label>
@@ -386,7 +397,8 @@ export function PortfolioSection({
                   {onlyDivergent ? "Somente divergentes" : "Todos os resultados"}
                 </button>
               </div>
-              <table>
+              <div className="table-scroll">
+                <table>
                 <thead>
                   <tr>
                     <th>Ativo</th>
@@ -414,7 +426,8 @@ export function PortfolioSection({
                     </tr>
                   )}
                 </tbody>
-              </table>
+                </table>
+              </div>
             </>
           )}
         </section>

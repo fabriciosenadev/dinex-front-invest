@@ -9,19 +9,19 @@ type TabNavigationProps = {
   secondaryTabs?: DashboardTab[];
 };
 
-const tabs: Array<{ id: DashboardTab; label: string }> = [
-  { id: "movements", label: "Movimentacoes" },
-  { id: "statement", label: "Extrato" },
-  { id: "corporate-events", label: "Eventos" },
-  { id: "portfolio", label: "Carteira" },
-  { id: "income-tax", label: "Imposto de Renda" },
-  { id: "assets", label: "Ativos" }
+const tabs: Array<{ id: DashboardTab; label: string; icon: string }> = [
+  { id: "movements", label: "Movimentacoes", icon: "↔" },
+  { id: "statement", label: "Extrato", icon: "🧾" },
+  { id: "corporate-events", label: "Eventos", icon: "🔁" },
+  { id: "portfolio", label: "Carteira", icon: "💼" },
+  { id: "income-tax", label: "Imposto de Renda", icon: "📊" },
+  { id: "assets", label: "Ativos", icon: "🏷" }
 ];
 
 export function TabNavigation({ activeTab, onChange, primaryTabs, secondaryTabs }: TabNavigationProps) {
-  const labelById = new Map(tabs.map((tab) => [tab.id, tab.label]));
-  const primary = primaryTabs.filter((tabId) => labelById.has(tabId));
-  const secondary = (secondaryTabs ?? []).filter((tabId) => labelById.has(tabId));
+  const tabById = new Map(tabs.map((tab) => [tab.id, tab]));
+  const primary = primaryTabs.filter((tabId) => tabById.has(tabId));
+  const secondary = (secondaryTabs ?? []).filter((tabId) => tabById.has(tabId));
 
   function renderButtons(tabIds: DashboardTab[]) {
     return tabIds.map((tabId) => (
@@ -31,7 +31,12 @@ export function TabNavigation({ activeTab, onChange, primaryTabs, secondaryTabs 
         className={activeTab === tabId ? "tab-button active" : "tab-button"}
         onClick={() => onChange(tabId)}
       >
-        {labelById.get(tabId)}
+        <span className="tab-button-content">
+          <span className="tab-icon" aria-hidden="true">
+            {tabById.get(tabId)?.icon}
+          </span>
+          <span>{tabById.get(tabId)?.label}</span>
+        </span>
       </button>
     ));
   }

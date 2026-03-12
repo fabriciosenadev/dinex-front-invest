@@ -46,11 +46,17 @@ export default function LoginPage() {
 
   return (
     <main>
-      <h1>DinEx Frontend</h1>
+      <h1 className="section-title">
+        <span aria-hidden="true">🔐</span>
+        <span>DinEx Frontend</span>
+      </h1>
       <p>Acesso ao painel autenticado.</p>
 
       <section className="card">
-        <h2>Login</h2>
+        <h2 className="section-title">
+          <span aria-hidden="true">👤</span>
+          <span>Login</span>
+        </h2>
         <form onSubmit={onSubmit}>
           <div className="grid">
             <label>

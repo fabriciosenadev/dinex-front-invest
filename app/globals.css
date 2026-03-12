@@ -12,6 +12,8 @@
   --button-bg: #1f4eea;
   --button-text: #fff;
   --status-color: #445a82;
+  --status-bg: #eef4ff;
+  --status-border: #d4e1fb;
   --table-border: #ecf0f9;
   --tab-primary-bg: #dfe9ff;
   --tab-primary-text: #123f8f;
@@ -57,6 +59,7 @@
   --badge-outro-bg: #f2f4f7;
   --badge-outro-text: #4b5565;
   --badge-outro-border: #dde3ec;
+  --muted-surface: #f7faff;
 }
 
 :root[data-theme="dark"] {
@@ -72,6 +75,8 @@
   --button-bg: #3d6bff;
   --button-text: #f5f8ff;
   --status-color: #c4d2ef;
+  --status-bg: #21324e;
+  --status-border: #324a70;
   --table-border: #2a3854;
   --tab-primary-bg: #243757;
   --tab-primary-text: #d9e6ff;
@@ -117,6 +122,7 @@
   --badge-outro-bg: #2f3542;
   --badge-outro-text: #d2dae7;
   --badge-outro-border: #475164;
+  --muted-surface: #1a2a44;
 }
 
 * {
@@ -127,12 +133,13 @@ body {
   margin: 0;
   background: var(--bg-gradient);
   color: var(--text-color);
+  line-height: 1.45;
 }
 
 main {
   max-width: 100%;
   margin: 0 auto;
-  padding: 16px 12px 40px;
+  padding: 66px 12px 40px;
   position: relative;
 }
 
@@ -186,13 +193,26 @@ main {
 
 h1 {
   margin-top: 0;
+  margin-bottom: 10px;
+}
+
+h2 {
+  margin-top: 0;
+  margin-bottom: 10px;
+}
+
+.section-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
 }
 
 .card {
   background: var(--card-bg);
   border: 1px solid var(--card-border);
   border-radius: 12px;
-  padding: 16px;
+  padding: 14px;
   margin-bottom: 16px;
   box-shadow: var(--card-shadow);
 }
@@ -206,7 +226,8 @@ h1 {
 label {
   display: flex;
   flex-direction: column;
-  font-size: 13px;
+  font-size: 12px;
+  font-weight: 600;
   gap: 6px;
 }
 
@@ -215,8 +236,8 @@ select,
 button {
   border-radius: 8px;
   border: 1px solid var(--input-border);
-  padding: 10px 12px;
-  font-size: 14px;
+  padding: 11px 12px;
+  font-size: 15px;
 }
 
 input,
@@ -230,6 +251,8 @@ button {
   color: var(--button-text);
   border: none;
   cursor: pointer;
+  min-height: 42px;
+  font-weight: 600;
 }
 
 button:disabled {
@@ -256,6 +279,10 @@ td {
   flex-wrap: wrap;
 }
 
+.row-actions button {
+  flex: 1 1 160px;
+}
+
 .toolbar {
   display: flex;
   align-items: flex-start;
@@ -265,8 +292,13 @@ td {
 }
 
 .status {
-  font-size: 13px;
+  font-size: 12px;
   color: var(--status-color);
+  background: var(--status-bg);
+  border: 1px solid var(--status-border);
+  border-radius: 8px;
+  padding: 8px 10px;
+  margin: 8px 0 0;
 }
 
 .tabs {
@@ -275,6 +307,7 @@ td {
   flex-wrap: nowrap;
   overflow-x: auto;
   padding-bottom: 4px;
+  scrollbar-width: thin;
 }
 
 .tab-nav {
@@ -296,6 +329,7 @@ td {
 .tab-button {
   background: var(--tab-bg);
   color: var(--tab-text);
+  white-space: nowrap;
 }
 
 .tab-button.active {
@@ -307,6 +341,20 @@ td {
   display: flex;
   gap: 8px;
   flex-wrap: wrap;
+}
+
+.inline-actions button {
+  min-height: 40px;
+}
+
+.tab-button-content {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.tab-icon {
+  font-size: 13px;
 }
 
 .sankey-chart-wrap {
@@ -328,6 +376,10 @@ td {
 
 .portfolio-filters {
   margin-bottom: 10px;
+}
+
+.full-width {
+  grid-column: 1 / -1;
 }
 
 .badge-warn {
@@ -420,6 +472,8 @@ details > summary {
 .table-scroll {
   width: 100%;
   overflow-x: auto;
+  border-radius: 8px;
+  border: 1px solid var(--table-border);
 }
 
 .table-scroll table {
@@ -428,11 +482,11 @@ details > summary {
 
 .theme-toggle {
   position: fixed;
-  top: 12px;
+  top: 10px;
   right: 12px;
   z-index: 10000;
   border-radius: 999px;
-  padding: 8px 12px;
+  padding: 8px 10px;
   font-size: 12px;
   font-weight: 600;
   box-shadow: 0 6px 18px rgba(10, 20, 40, 0.25);
@@ -441,11 +495,15 @@ details > summary {
 @media (min-width: 721px) {
   main {
     max-width: 920px;
-    padding: 32px 20px 56px;
+    padding: 80px 20px 56px;
   }
 
   .grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  label {
+    font-size: 13px;
   }
 
   .toolbar {
@@ -462,5 +520,9 @@ details > summary {
 
   .sankey-chart-wrap {
     height: 520px;
+  }
+
+  .row-actions button {
+    flex: 0 1 auto;
   }
 }

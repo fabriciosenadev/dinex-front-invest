@@ -187,7 +187,10 @@ export function IncomeTaxSection({ summary, assetDefinitions, statementEntries, 
     <section className="card">
       <div className="toolbar">
         <div>
-          <h2>Base para Imposto de Renda</h2>
+          <h2 className="section-title">
+            <span aria-hidden="true">📊</span>
+            <span>Base para Imposto de Renda</span>
+          </h2>
           <p className="status">
             {assetTab === "acao"
               ? "Consolidação por ano e por empresa (somando os ativos da mesma empresa)."

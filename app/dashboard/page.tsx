@@ -796,13 +796,19 @@ export default function DashboardPage() {
 
   return (
     <main>
-      <h1>DinEx Frontend</h1>
+      <h1 className="section-title">
+        <span aria-hidden="true">📱</span>
+        <span>DinEx Frontend</span>
+      </h1>
       <p>Painel autenticado.</p>
       <fieldset className="dashboard-lock-zone" disabled={uiLocked}>
         <section className="card">
           <div className="toolbar">
-            <div>
-              <h2>Modo de uso</h2>
+              <div>
+              <h2 className="section-title">
+                <span aria-hidden="true">⚙</span>
+                <span>Modo de uso</span>
+              </h2>
               <p className="status">Simples para uso diário. Avançado para manutenção e lançamentos técnicos.</p>
             </div>
             <div className="inline-actions">
@@ -828,7 +834,10 @@ export default function DashboardPage() {
           <section className="card">
             <div className="toolbar">
               <div>
-                <h2>Zerar dados de investimento</h2>
+                <h2 className="section-title">
+                  <span aria-hidden="true">🧹</span>
+                  <span>Zerar dados de investimento</span>
+                </h2>
                 <p className="status">Use os botoes separados para limpar eventos ou carteira/extrato.</p>
               </div>
               <div className="row-actions">

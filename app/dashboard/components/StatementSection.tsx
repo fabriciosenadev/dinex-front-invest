@@ -41,7 +41,10 @@ export function StatementSection({ form, entries, entryTypeOptions, onChange, im
 
   return (
     <section className="card">
-      <h2>Extrato de Investimentos</h2>
+      <h2 className="section-title">
+        <span aria-hidden="true">🧾</span>
+        <span>Extrato de Investimentos</span>
+      </h2>
       <form onSubmit={importState.onImport}>
         <div className="grid">
           <label>
@@ -118,37 +121,39 @@ export function StatementSection({ form, entries, entryTypeOptions, onChange, im
         </form>
       )}
 
-      <table>
-        <thead>
-          <tr>
-            <th>Data</th>
-            <th>Tipo</th>
-            <th>Descricao</th>
-            <th>Ativo</th>
-            <th>Bruto</th>
-            <th>Liquido</th>
-            <th>Moeda</th>
-          </tr>
-        </thead>
-        <tbody>
-          {entries.map((entry) => (
-            <tr key={entry.id}>
-              <td>{new Date(entry.occurredAtUtc).toLocaleDateString("pt-BR")}</td>
-              <td>{getEntryTypeLabel(entry.type)}</td>
-              <td>{entry.description}</td>
-              <td>{entry.assetSymbol ?? "-"}</td>
-              <td>{entry.grossAmount.toFixed(2)}</td>
-              <td>{entry.netAmount.toFixed(2)}</td>
-              <td>{entry.currency}</td>
-            </tr>
-          ))}
-          {entries.length === 0 && (
+      <div className="table-scroll">
+        <table>
+          <thead>
             <tr>
-              <td colSpan={7}>Sem lancamentos no extrato ainda.</td>
+              <th>Data</th>
+              <th>Tipo</th>
+              <th>Descricao</th>
+              <th>Ativo</th>
+              <th>Bruto</th>
+              <th>Liquido</th>
+              <th>Moeda</th>
             </tr>
-          )}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {entries.map((entry) => (
+              <tr key={entry.id}>
+                <td>{new Date(entry.occurredAtUtc).toLocaleDateString("pt-BR")}</td>
+                <td>{getEntryTypeLabel(entry.type)}</td>
+                <td>{entry.description}</td>
+                <td>{entry.assetSymbol ?? "-"}</td>
+                <td>{entry.grossAmount.toFixed(2)}</td>
+                <td>{entry.netAmount.toFixed(2)}</td>
+                <td>{entry.currency}</td>
+              </tr>
+            ))}
+            {entries.length === 0 && (
+              <tr>
+                <td colSpan={7}>Sem lancamentos no extrato ainda.</td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </div>
     </section>
   );
 }

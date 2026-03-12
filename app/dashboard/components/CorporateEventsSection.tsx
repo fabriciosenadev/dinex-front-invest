@@ -47,7 +47,10 @@ export function CorporateEventsSection({
 
   return (
     <section className="card">
-      <h2>Eventos Corporativos Manuais</h2>
+      <h2 className="section-title">
+        <span aria-hidden="true">🔁</span>
+        <span>Eventos Corporativos Manuais</span>
+      </h2>
       <form onSubmit={onSubmit}>
         <div className="grid">
           <label>
@@ -107,46 +110,48 @@ export function CorporateEventsSection({
         </div>
       </form>
 
-      <table>
-        <thead>
-          <tr>
-            <th>Data</th>
-            <th>Tipo</th>
-            <th>Origem</th>
-            <th>Destino</th>
-            <th>Fator</th>
-            <th>Obs</th>
-            <th>Acoes</th>
-          </tr>
-        </thead>
-        <tbody>
-          {events.map((entry) => (
-            <tr key={entry.id}>
-              <td>{new Date(entry.effectiveAtUtc).toLocaleDateString("pt-BR")}</td>
-              <td>{eventTypeOptions.find((x) => x.value === entry.type)?.label ?? entry.type}</td>
-              <td>{entry.sourceAssetSymbol}</td>
-              <td>{entry.targetAssetSymbol ?? "-"}</td>
-              <td>{entry.factor}</td>
-              <td>{entry.notes ?? "-"}</td>
-              <td>
-                <div className="inline-actions">
-                  <button type="button" onClick={() => onEdit(entry)} disabled={loading}>
-                    Editar
-                  </button>
-                  <button type="button" onClick={() => onDelete(entry.id)} disabled={loading}>
-                    Excluir
-                  </button>
-                </div>
-              </td>
-            </tr>
-          ))}
-          {events.length === 0 && (
+      <div className="table-scroll">
+        <table>
+          <thead>
             <tr>
-              <td colSpan={7}>Sem eventos cadastrados.</td>
+              <th>Data</th>
+              <th>Tipo</th>
+              <th>Origem</th>
+              <th>Destino</th>
+              <th>Fator</th>
+              <th>Obs</th>
+              <th>Acoes</th>
             </tr>
-          )}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {events.map((entry) => (
+              <tr key={entry.id}>
+                <td>{new Date(entry.effectiveAtUtc).toLocaleDateString("pt-BR")}</td>
+                <td>{eventTypeOptions.find((x) => x.value === entry.type)?.label ?? entry.type}</td>
+                <td>{entry.sourceAssetSymbol}</td>
+                <td>{entry.targetAssetSymbol ?? "-"}</td>
+                <td>{entry.factor}</td>
+                <td>{entry.notes ?? "-"}</td>
+                <td>
+                  <div className="inline-actions">
+                    <button type="button" onClick={() => onEdit(entry)} disabled={loading}>
+                      ✏ Editar
+                    </button>
+                    <button type="button" onClick={() => onDelete(entry.id)} disabled={loading}>
+                      🗑 Excluir
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            ))}
+            {events.length === 0 && (
+              <tr>
+                <td colSpan={7}>Sem eventos cadastrados.</td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </div>
     </section>
   );
 }
