@@ -1,26 +1,42 @@
-# DinExFrontend
+# DinEx Front Invest
 
-Frontend Next.js minimo para testar os endpoints da `DinExApi`.
+Frontend do DinEx para acompanhamento de investimentos, extrato e base de apoio para imposto de renda.
 
-## Endpoints usados
+## Visao Geral
 
-- `POST /api/movements`
-- `GET /api/movements/portfolio`
+Aplicacao web em Next.js com foco em:
+- importacao e visualizacao de extrato;
+- consolidacao de carteira;
+- eventos corporativos manuais;
+- base anual para imposto de renda;
+- catalogo de ativos;
+- visualizacao Sankey da distribuicao da carteira.
 
-As chamadas do browser passam por rotas internas do Next:
+## Principais Modulos
 
-- `POST /api/movements` -> proxy para API .NET
-- `GET /api/movements/portfolio` -> proxy para API .NET
+- **Extrato**: importacao de planilhas e lancamentos no livro de extrato.
+- **Carteira**: posicoes consolidadas por ativo com filtros e ordenacao.
+- **Imposto de Renda**: consolidacao anual, separacao por classe e proventos.
+- **Ativos**: cadastro e manutencao do catalogo de ativos.
+- **Eventos**: cadastro/edicao/exclusao de eventos corporativos manuais.
 
-## Como rodar
+## Tecnologias
 
-1. Copie `.env.example` para `.env.local`.
-2. Ajuste `DINEX_API_URL` para a URL da sua API .NET.
-3. Execute:
+- Next.js (App Router)
+- TypeScript
+- React
+
+## Execucao Local
+
+No diretorio `DinExFrontend`:
 
 ```bash
 npm install
 npm run dev
 ```
 
-Abra `http://localhost:3000`.
+Aplicacao padrao em `http://localhost:3000`.
+
+## API Consumida
+
+O frontend consome os endpoints do backend DinExApi por rotas internas (`app/api/*`) e chamadas de pagina/components.
