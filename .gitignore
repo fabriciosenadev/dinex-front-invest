@@ -20,3 +20,6 @@ pnpm-debug.log*
 .DS_Store
 Thumbs.db
 .vscode/
+
+# Local-only notes
+GAME11-dados-lancamento.txt
