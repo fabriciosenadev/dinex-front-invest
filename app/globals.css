@@ -139,7 +139,7 @@ body {
 main {
   max-width: 100%;
   margin: 0 auto;
-  padding: 76px 12px 96px;
+  padding: 76px 12px 132px;
   position: relative;
 }
 
@@ -734,26 +734,38 @@ td {
   display: grid;
   grid-auto-flow: column;
   grid-auto-columns: minmax(90px, 1fr);
+  align-items: stretch;
   gap: 6px;
   overflow-x: auto;
-  padding: 8px 10px calc(8px + env(safe-area-inset-bottom));
+  padding: 10px 10px calc(14px + env(safe-area-inset-bottom));
   background: color-mix(in srgb, var(--card-bg) 94%, transparent);
   border-top: 1px solid var(--card-border);
   backdrop-filter: blur(8px);
 }
 
 .mobile-bottom-nav .tab-button {
-  min-height: 46px;
+  min-height: 54px;
+  padding: 6px 8px;
   font-size: 0.75rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .mobile-bottom-nav .tab-button-content {
   flex-direction: column;
-  gap: 2px;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
   width: 100%;
+  line-height: 1.2;
 }
 
 .mobile-bottom-nav .tab-button-content span:last-child {
+  font-size: 0.68rem;
+  line-height: 1.2;
+  display: block;
+  padding-bottom: 2px;
   max-width: 100%;
   overflow: hidden;
   text-overflow: ellipsis;
