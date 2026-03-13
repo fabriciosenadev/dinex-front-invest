@@ -129,6 +129,7 @@ export default function DashboardPage() {
   const [reconcileResult, setReconcileResult] = useState<ReconcilePortfolioPayload | null>(null);
   const [reconcileFile, setReconcileFile] = useState<File | null>(null);
   const [statementEntries, setStatementEntries] = useState<StatementEntryPayload[]>([]);
+  const [statementEntriesForIncomeTax, setStatementEntriesForIncomeTax] = useState<StatementEntryPayload[]>([]);
   const [corporateEvents, setCorporateEvents] = useState<CorporateEventPayload[]>([]);
   const [assetDefinitions, setAssetDefinitions] = useState<AssetDefinitionPayload[]>([]);
   const [portfolioPage, setPortfolioPage] = useState(1);
@@ -179,6 +180,7 @@ export default function DashboardPage() {
     setIncomeTaxSummary([]);
     setReconcileResult(null);
     setStatementEntries([]);
+    setStatementEntriesForIncomeTax([]);
     setCorporateEvents([]);
     setAssetDefinitions([]);
     setStatus(message);
@@ -242,6 +244,43 @@ export default function DashboardPage() {
     setStatementPage(page);
     setStatementPageSize(pageSize);
     setStatementEntries(payload ?? []);
+  }
+
+  async function loadStatementForIncomeTax(activeSession: StoredSession) {
+    const pageSize = 200;
+    const maxPages = 200;
+    let page = 1;
+    let currentSession = activeSession;
+    const allEntries: StatementEntryPayload[] = [];
+
+    while (page <= maxPages) {
+      const { response, nextSession } = await authorizedFetch(currentSession, `/api/statement?page=${page}&pageSize=${pageSize}`, { method: "GET" });
+      applyRefreshedSession(nextSession);
+      if (nextSession) {
+        currentSession = nextSession;
+      }
+
+      if (response.status === 401) {
+        clearSessionAndGoLogin("Sessao expirada. Faca login novamente.");
+        return;
+      }
+
+      if (!response.ok) {
+        throw new Error(await getErrorMessage(response, "Falha ao carregar extrato completo para IR."));
+      }
+
+      const payload = (await response.json()) as StatementEntryPayload[];
+      const items = payload ?? [];
+      allEntries.push(...items);
+
+      if (items.length < pageSize) {
+        break;
+      }
+
+      page += 1;
+    }
+
+    setStatementEntriesForIncomeTax(allEntries);
   }
 
   async function loadCorporateEvents(activeSession: StoredSession, page = corporateEventsPage, pageSize = corporateEventsPageSize) {
@@ -314,6 +353,7 @@ export default function DashboardPage() {
     loadCurrentUser(stored)
       .then(() => loadPortfolio(stored))
       .then(() => loadStatement(stored))
+      .then(() => loadStatementForIncomeTax(stored))
       .then(() => loadCorporateEvents(stored))
       .then(() => loadIncomeTaxSummary(stored))
       .then(() => loadAssetDefinitions(stored))
@@ -423,6 +463,7 @@ export default function DashboardPage() {
       }
 
       await loadStatement(nextSession ?? session);
+      await loadStatementForIncomeTax(nextSession ?? session);
       setStatus("Extrato atualizado com sucesso.");
     } catch (error) {
       setStatus(error instanceof Error ? error.message : "Erro ao registrar item no extrato.");
@@ -468,6 +509,7 @@ export default function DashboardPage() {
       const payload = (await response.json()) as ImportInvestmentsSpreadsheetPayload;
       await loadPortfolio(nextSession ?? session);
       await loadStatement(nextSession ?? session);
+      await loadStatementForIncomeTax(nextSession ?? session);
       await loadIncomeTaxSummary(nextSession ?? session);
       await loadAssetDefinitions(nextSession ?? session);
       setImportFile(null);
@@ -634,6 +676,7 @@ export default function DashboardPage() {
 
       await loadPortfolio(nextSession ?? session);
       await loadStatement(nextSession ?? session);
+      await loadStatementForIncomeTax(nextSession ?? session);
       await loadIncomeTaxSummary(nextSession ?? session);
       setStatus("Movimentacao registrada com sucesso.");
     } catch (error) {
@@ -817,6 +860,7 @@ export default function DashboardPage() {
 
       await loadPortfolio(nextSession ?? session);
       await loadStatement(nextSession ?? session);
+      await loadStatementForIncomeTax(nextSession ?? session);
       await loadCorporateEvents(nextSession ?? session);
       await loadIncomeTaxSummary(nextSession ?? session);
       setReconcileResult(null);
@@ -1127,13 +1171,14 @@ export default function DashboardPage() {
               <IncomeTaxSection
                 summary={incomeTaxSummary}
                 assetDefinitions={assetDefinitions}
-                statementEntries={statementEntries}
+                statementEntries={statementEntriesForIncomeTax}
                 onRefresh={async () => {
                   if (!session) {
                     setStatus("Sessao nao encontrada. Faca login.");
                     return;
                   }
 
+                  await loadStatementForIncomeTax(session);
                   await loadIncomeTaxSummary(session);
                   setStatus("Base de IR atualizada.");
                 }}

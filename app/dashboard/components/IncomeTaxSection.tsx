@@ -150,16 +150,22 @@ export function IncomeTaxSection({ summary, assetDefinitions, statementEntries, 
     const accumulator = new Map<string, { dividend: number; jcp: number; rendimento: number; totalWithoutJcp: number; entriesCount: number }>();
     for (const row of incomeByAssetAndTypeForTab) {
       const key = row.assetSymbol;
-      const event = normalizeIncomeEventType(row.eventType);
       const current = accumulator.get(key) ?? { dividend: 0, jcp: 0, rendimento: 0, totalWithoutJcp: 0, entriesCount: 0 };
-      if (event === "dividend") {
-        current.dividend += row.totalNetAmount;
-        current.totalWithoutJcp += row.totalNetAmount;
-      } else if (event === "jcp") {
-        current.jcp += row.totalNetAmount;
-      } else {
+
+      if (assetTab === "fii") {
         current.rendimento += row.totalNetAmount;
         current.totalWithoutJcp += row.totalNetAmount;
+      } else {
+        const event = normalizeIncomeEventType(row.eventType);
+        if (event === "dividend") {
+          current.dividend += row.totalNetAmount;
+          current.totalWithoutJcp += row.totalNetAmount;
+        } else if (event === "jcp") {
+          current.jcp += row.totalNetAmount;
+        } else {
+          current.rendimento += row.totalNetAmount;
+          current.totalWithoutJcp += row.totalNetAmount;
+        }
       }
 
       current.entriesCount += row.entriesCount;
@@ -167,7 +173,7 @@ export function IncomeTaxSection({ summary, assetDefinitions, statementEntries, 
     }
 
     return accumulator;
-  }, [incomeByAssetAndTypeForTab]);
+  }, [incomeByAssetAndTypeForTab, assetTab]);
   const receivedIncomeTotalWithoutJcp = Array.from(incomeByAsset.values()).reduce((accumulator, row) => accumulator + row.totalWithoutJcp, 0);
   const receivedJcpTotal = Array.from(incomeByAsset.values()).reduce((accumulator, row) => accumulator + row.jcp, 0);
   const receivedIncomeEntriesCount = Array.from(incomeByAsset.values()).reduce((accumulator, row) => accumulator + row.entriesCount, 0);
@@ -236,11 +242,18 @@ export function IncomeTaxSection({ summary, assetDefinitions, statementEntries, 
 
       {currentYearSummary !== null && availableTabs.length > 0 && (
         <>
-          <p className="status">
-            Proventos recebidos (sem transferidos): {receivedIncomeEntriesCount} lançamentos | Div+Rend:{" "}
-            {new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(receivedIncomeTotalWithoutJcp)} | JCP:{" "}
-            {new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(receivedJcpTotal)}
-          </p>
+          {assetTab === "fii" ? (
+            <p className="status">
+              Rendimentos recebidos (sem transferidos): {receivedIncomeEntriesCount} lançamentos | Total:{" "}
+              {new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(receivedIncomeTotalWithoutJcp)}
+            </p>
+          ) : (
+            <p className="status">
+              Proventos recebidos (sem transferidos): {receivedIncomeEntriesCount} lançamentos | Div+Rend:{" "}
+              {new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(receivedIncomeTotalWithoutJcp)} | JCP:{" "}
+              {new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(receivedJcpTotal)}
+            </p>
+          )}
           {transferredEntries.length > 0 && (
             <p className="status">
               Transferidos desconsiderados no ano: {transferredEntries.length} | Total:{" "}
@@ -265,6 +278,15 @@ export function IncomeTaxSection({ summary, assetDefinitions, statementEntries, 
                   <th>JCP</th>
                   <th>Rendimento</th>
                   <th>Total Div+Rend</th>
+                  <th>Moeda</th>
+                </tr>
+              ) : assetTab === "fii" ? (
+                <tr>
+                  <th>Ativo</th>
+                  <th>Quantidade</th>
+                  <th>Preço Médio</th>
+                  <th>Valor Total</th>
+                  <th>Rendimento</th>
                   <th>Moeda</th>
                 </tr>
               ) : (
@@ -324,7 +346,18 @@ export function IncomeTaxSection({ summary, assetDefinitions, statementEntries, 
                     <td>{company.currency}</td>
                   </tr>
                 ))}
-              {assetTab !== "acao" &&
+              {assetTab === "fii" &&
+                nonEquityAssets.map((asset) => (
+                  <tr key={asset.assetSymbol}>
+                    <td>{asset.assetSymbol}</td>
+                    <td>{asset.quantity}</td>
+                    <td>{formatMoney(asset.averagePrice, asset.currency)}</td>
+                    <td>{formatMoney(asset.totalCost, asset.currency)}</td>
+                    <td>{formatMoney((incomeByAsset.get(asset.assetSymbol)?.rendimento ?? 0), asset.currency)}</td>
+                    <td>{asset.currency}</td>
+                  </tr>
+                ))}
+              {assetTab === "etf" &&
                 nonEquityAssets.map((asset) => (
                   <tr key={asset.assetSymbol}>
                     <td>{asset.assetSymbol}</td>
@@ -338,9 +371,9 @@ export function IncomeTaxSection({ summary, assetDefinitions, statementEntries, 
                     <td>{asset.currency}</td>
                   </tr>
                 ))}
-              {filteredCompanies.length === 0 && (
+              {((assetTab === "acao" && filteredCompanies.length === 0) || (assetTab !== "acao" && nonEquityAssets.length === 0)) && (
                 <tr>
-                  <td colSpan={assetTab === "acao" ? 10 : 9}>Sem ativos dessa classe no ano selecionado.</td>
+                  <td colSpan={assetTab === "acao" ? 10 : assetTab === "fii" ? 6 : 9}>Sem ativos dessa classe no ano selecionado.</td>
                 </tr>
               )}
             </tbody>
