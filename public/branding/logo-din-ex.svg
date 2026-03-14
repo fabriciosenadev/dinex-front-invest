@@ -19,7 +19,7 @@
     <path d="M10 44L36 30L56 34L90 10" stroke="url(#dinexAccent)" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/>
     <path d="M78 10H90V22" stroke="url(#dinexAccent)" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/>
     <circle cx="18" cy="18" r="12" fill="white"/>
-    <path d="M18 10V26M12 14C12 11.8 14 10 18 10C22 10 24 11.8 24 14C24 16.2 22 18 18 18C14 18 12 19.8 12 22C12 24.2 14 26 18 26C22 26 24 24.2 24 22" stroke="#1E3B82" stroke-width="2.5" stroke-linecap="round"/>
+    <path d="M18 9V27M22.5 12.5C22.5 10.6 20.5 9 18 9C15.5 9 13.5 10.6 13.5 12.8C13.5 15 15.3 16.2 18 16.9C20.7 17.6 22.5 18.8 22.5 21C22.5 23.4 20.5 25 18 25C15.5 25 13.5 23.4 13.5 21.2" stroke="#1E3B82" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
   </g>
 
   <g fill="#0F1A33">
