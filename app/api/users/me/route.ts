@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 
-const apiBaseUrl = process.env.DINEX_API_URL ?? "http://localhost:5254";
+const apiBaseUrl = process.env.DINEX_API_URL ?? process.env.API_BASE_URL ?? process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:5254";
 
 export async function GET(request: Request) {
   try {
