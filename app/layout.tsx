@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "DinEx Frontend",
+  title: "Dinheiro Exato",
   description: "Frontend de exemplo consumindo endpoints da DinEx API"
 };
 

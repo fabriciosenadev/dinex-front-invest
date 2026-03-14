@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Dinheiro Exato">
+  <defs>
+    <linearGradient id="bg" x1="0" x2="1" y1="0" y2="1">
+      <stop offset="0%" stop-color="#4F7CFF" />
+      <stop offset="100%" stop-color="#1E3A8A" />
+    </linearGradient>
+  </defs>
+  <rect x="2" y="2" width="60" height="60" rx="14" fill="url(#bg)" />
+  <rect x="16" y="35" width="7" height="13" rx="2" fill="#FFFFFF" />
+  <rect x="28" y="27" width="7" height="21" rx="2" fill="#DCE9FF" />
+  <rect x="40" y="19" width="7" height="29" rx="2" fill="#65E19D" />
+  <path d="M16 22h13.5l4.5-5 4.5 2.5L48 13" fill="none" stroke="#65E19D" stroke-linecap="round" stroke-linejoin="round" stroke-width="3" />
+  <path d="M45 13h3v3" fill="none" stroke="#65E19D" stroke-linecap="round" stroke-linejoin="round" stroke-width="3" />
+</svg>
