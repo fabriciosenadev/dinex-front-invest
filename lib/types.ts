@@ -38,9 +38,26 @@ export type IncomeTaxCompanySummaryPayload = {
   assets: IncomeTaxAssetSummaryPayload[];
 };
 
+export type IncomeTaxRealizedAssetSummaryPayload = {
+  assetSymbol: string;
+  soldQuantity: number;
+  grossProceeds: number;
+  costBasis: number;
+  realizedResult: number;
+  currency: string;
+};
+
+export type IncomeTaxRealizedSummaryPayload = {
+  totalProfit: number;
+  totalLoss: number;
+  netResult: number;
+  assets: IncomeTaxRealizedAssetSummaryPayload[];
+};
+
 export type IncomeTaxYearSummaryPayload = {
   year: number;
   companies: IncomeTaxCompanySummaryPayload[];
+  realized: IncomeTaxRealizedSummaryPayload;
 };
 
 export type ErrorResponse = {

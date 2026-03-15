@@ -188,6 +188,37 @@ export function IncomeTaxSection({ summary, assetDefinitions, statementEntries, 
     });
   }, [selectedYear, statementEntries]);
   const transferredEntriesTotal = transferredEntries.reduce((accumulator, entry) => accumulator + entry.netAmount, 0);
+  const realizedForTab = useMemo(() => {
+    if (!currentYearSummary) {
+      return {
+        assets: [] as Array<{
+          assetSymbol: string;
+          soldQuantity: number;
+          grossProceeds: number;
+          costBasis: number;
+          realizedResult: number;
+          currency: string;
+        }>,
+        totalProfit: 0,
+        totalLoss: 0,
+        netResult: 0
+      };
+    }
+
+    const assets = currentYearSummary.realized.assets
+      .filter((asset) => classifyIncomeTaxAsset(asset.assetSymbol, assetDefinitions) === assetTab)
+      .sort((left, right) => left.assetSymbol.localeCompare(right.assetSymbol, "pt-BR"));
+    const totalProfit = assets.filter((asset) => asset.realizedResult > 0).reduce((accumulator, asset) => accumulator + asset.realizedResult, 0);
+    const totalLoss = assets.filter((asset) => asset.realizedResult < 0).reduce((accumulator, asset) => accumulator + Math.abs(asset.realizedResult), 0);
+    const netResult = assets.reduce((accumulator, asset) => accumulator + asset.realizedResult, 0);
+
+    return {
+      assets,
+      totalProfit,
+      totalLoss,
+      netResult
+    };
+  }, [currentYearSummary, assetDefinitions, assetTab]);
 
   return (
     <section className="card">
@@ -379,6 +410,40 @@ export function IncomeTaxSection({ summary, assetDefinitions, statementEntries, 
             </tbody>
             </table>
           </div>
+          <p className="status">
+            Resultado realizado no ano (vendas) | Lucro: {formatMoney(realizedForTab.totalProfit, "BRL")} | Prejuízo: {formatMoney(realizedForTab.totalLoss, "BRL")} | Líquido: {formatMoney(realizedForTab.netResult, "BRL")}
+          </p>
+          <div className="table-scroll">
+            <table>
+              <thead>
+                <tr>
+                  <th>Ativo</th>
+                  <th>Quantidade Vendida</th>
+                  <th>Valor de Venda</th>
+                  <th>Custo Médio Realizado</th>
+                  <th>Resultado</th>
+                  <th>Moeda</th>
+                </tr>
+              </thead>
+              <tbody>
+                {realizedForTab.assets.map((asset) => (
+                  <tr key={asset.assetSymbol}>
+                    <td>{asset.assetSymbol}</td>
+                    <td>{asset.soldQuantity}</td>
+                    <td>{formatMoney(asset.grossProceeds, asset.currency)}</td>
+                    <td>{formatMoney(asset.costBasis, asset.currency)}</td>
+                    <td>{formatMoney(asset.realizedResult, asset.currency)}</td>
+                    <td>{asset.currency}</td>
+                  </tr>
+                ))}
+                {realizedForTab.assets.length === 0 && (
+                  <tr>
+                    <td colSpan={6}>Sem vendas dessa classe no ano selecionado.</td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
         </>
       )}
 
@@ -474,3 +539,6 @@ function normalizeIncomeEventType(value: string): "dividend" | "jcp" | "rendimen
 
   return "rendimento";
 }
+
+
+
