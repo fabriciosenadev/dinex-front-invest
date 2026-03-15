@@ -61,6 +61,40 @@ export async function authenticate(email: string, password: string): Promise<Sto
   };
 }
 
+export async function completeInvitation(
+  email: string,
+  activationCode: string,
+  password: string,
+  confirmPassword: string
+): Promise<void> {
+  const response = await fetch("/api/users/complete-invitation", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      email,
+      activationCode,
+      password,
+      confirmPassword
+    })
+  });
+
+  if (!response.ok) {
+    throw new Error(await getErrorMessage(response, "Falha ao concluir primeiro acesso."));
+  }
+}
+
+export async function resendActivationCode(email: string): Promise<void> {
+  const response = await fetch("/api/users/resend-activation-code", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ email })
+  });
+
+  if (!response.ok) {
+    throw new Error(await getErrorMessage(response, "Falha ao reenviar codigo de ativacao."));
+  }
+}
+
 export async function refreshSession(currentSession: StoredSession): Promise<StoredSession | null> {
   const response = await fetch("/api/users/refresh-token", {
     method: "POST",

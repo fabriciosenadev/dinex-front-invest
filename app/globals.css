@@ -232,6 +232,22 @@ main {
   display: none;
 }
 
+.auth-footer-link {
+  margin: 10px 0 0;
+  font-size: 0.95rem;
+  color: var(--status-color);
+}
+
+.auth-footer-link a {
+  color: var(--button-bg);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.auth-footer-link a:hover {
+  text-decoration: underline;
+}
+
 .login-grid {
   grid-template-columns: 1fr !important;
 }

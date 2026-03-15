@@ -2,6 +2,7 @@
 
 import { FormEvent, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import Image from "next/image";
 import { authenticate, persistSession, readStoredSession } from "../../lib/auth";
 import { getStoredTheme, THEME_CHANGED_EVENT, ThemeMode } from "../../lib/theme";
@@ -123,6 +124,9 @@ export default function LoginPage() {
           </div>
         </form>
         <p className="status">{status}</p>
+        <p className="auth-footer-link">
+          Primeiro acesso? <Link href="/complete-invitation">Concluir convite</Link>
+        </p>
       </section>
     </main>
   );
