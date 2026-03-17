@@ -78,7 +78,9 @@ type CorporateEventForm = {
   type: CorporateEventType;
   sourceAssetSymbol: string;
   targetAssetSymbol: string;
-  factor: string;
+  ratioFrom: string;
+  ratioTo: string;
+  manualFactor: string;
   effectiveDate: string;
   notes: string;
 };
@@ -93,7 +95,9 @@ const defaultCorporateEventForm: CorporateEventForm = {
   type: "TickerChange",
   sourceAssetSymbol: "PETR4",
   targetAssetSymbol: "",
-  factor: "1",
+  ratioFrom: "1",
+  ratioTo: "1",
+  manualFactor: "1",
   effectiveDate: new Date().toISOString().slice(0, 10),
   notes: ""
 };
@@ -534,11 +538,22 @@ export default function DashboardPage() {
     setCorporateEventLoading(true);
     setStatus(editingCorporateEventId ? "Atualizando evento corporativo..." : "Aplicando evento corporativo...");
 
+    const factor =
+      corporateEventForm.type === "Split" || corporateEventForm.type === "ReverseSplit"
+        ? Number(corporateEventForm.ratioTo) / Number(corporateEventForm.ratioFrom)
+        : Number(corporateEventForm.manualFactor);
+
+    if (!Number.isFinite(factor) || factor <= 0) {
+      setCorporateEventLoading(false);
+      setStatus("Informe uma proporcao/fator valido maior que zero.");
+      return;
+    }
+
     const payload: RegisterCorporateEventPayload = {
       type: corporateEventForm.type,
       sourceAssetSymbol: corporateEventForm.sourceAssetSymbol,
       targetAssetSymbol: corporateEventForm.targetAssetSymbol || null,
-      factor: Number(corporateEventForm.factor),
+      factor,
       effectiveAtUtc: new Date(`${corporateEventForm.effectiveDate}T00:00:00Z`).toISOString(),
       notes: corporateEventForm.notes || null
     };
@@ -578,12 +593,17 @@ export default function DashboardPage() {
   }
 
   function onEditCorporateEvent(corporateEvent: CorporateEventPayload) {
+    const ratioFrom = corporateEvent.type === "ReverseSplit" ? String(corporateEvent.factor) : "1";
+    const ratioTo = corporateEvent.type === "Split" ? String(corporateEvent.factor) : "1";
+
     setEditingCorporateEventId(corporateEvent.id);
     setCorporateEventForm({
       type: corporateEvent.type,
       sourceAssetSymbol: corporateEvent.sourceAssetSymbol,
       targetAssetSymbol: corporateEvent.targetAssetSymbol ?? "",
-      factor: String(corporateEvent.factor),
+      ratioFrom,
+      ratioTo,
+      manualFactor: String(corporateEvent.factor),
       effectiveDate: corporateEvent.effectiveAtUtc.slice(0, 10),
       notes: corporateEvent.notes ?? ""
     });
@@ -1227,3 +1247,6 @@ export default function DashboardPage() {
     </main>
   );
 }
+
+
+

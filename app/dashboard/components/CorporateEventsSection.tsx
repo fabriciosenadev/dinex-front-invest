@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent } from "react";
+import { FormEvent, useMemo } from "react";
 import { CorporateEventPayload, CorporateEventType } from "../../../lib/types";
 import { PaginationControls } from "./PaginationControls";
 
@@ -8,7 +8,9 @@ type CorporateEventForm = {
   type: CorporateEventType;
   sourceAssetSymbol: string;
   targetAssetSymbol: string;
-  factor: string;
+  ratioFrom: string;
+  ratioTo: string;
+  manualFactor: string;
   effectiveDate: string;
   notes: string;
 };
@@ -52,6 +54,22 @@ export function CorporateEventsSection({
   pagination
 }: CorporateEventsSectionProps) {
   const requiresTarget = form.type === "TickerChange";
+  const usesRatio = form.type === "Split" || form.type === "ReverseSplit";
+  const ratioFromNumber = Number(form.ratioFrom);
+  const ratioToNumber = Number(form.ratioTo);
+  const calculatedFactor = usesRatio && ratioFromNumber > 0 && ratioToNumber > 0 ? ratioToNumber / ratioFromNumber : null;
+  const preview = useMemo(() => {
+    if (!usesRatio || !calculatedFactor || calculatedFactor <= 0) {
+      return null;
+    }
+
+    const sampleQuantity = 100;
+    const sampleUnitPrice = 10;
+    return {
+      quantityAfter: sampleQuantity * calculatedFactor,
+      unitPriceAfter: sampleUnitPrice / calculatedFactor
+    };
+  }, [usesRatio, calculatedFactor]);
 
   return (
     <section className="card">
@@ -60,7 +78,19 @@ export function CorporateEventsSection({
         <div className="grid form-grid-three">
           <label>
             Tipo
-            <select value={form.type} onChange={(e) => onChange({ ...form, type: e.target.value as CorporateEventType })}>
+            <select
+              value={form.type}
+              onChange={(e) => {
+                const nextType = e.target.value as CorporateEventType;
+                onChange({
+                  ...form,
+                  type: nextType,
+                  ratioFrom: nextType === "Split" || nextType === "ReverseSplit" ? "1" : form.ratioFrom,
+                  ratioTo: nextType === "Split" ? "2" : nextType === "ReverseSplit" ? "1" : form.ratioTo,
+                  manualFactor: nextType === "TickerChange" ? form.manualFactor : "1"
+                });
+              }}
+            >
               {eventTypeOptions.map((option) => (
                 <option key={option.value} value={option.value}>
                   {option.label}
@@ -84,10 +114,36 @@ export function CorporateEventsSection({
             />
           </label>
 
-          <label>
-            Fator
-            <input type="number" min="0.000001" step="0.000001" value={form.factor} onChange={(e) => onChange({ ...form, factor: e.target.value })} required />
-          </label>
+          {usesRatio ? (
+            <>
+              <label>
+                Proporcao de
+                <input type="number" min="0.000001" step="0.000001" value={form.ratioFrom} onChange={(e) => onChange({ ...form, ratioFrom: e.target.value })} required />
+              </label>
+
+              <label>
+                Proporcao para
+                <input type="number" min="0.000001" step="0.000001" value={form.ratioTo} onChange={(e) => onChange({ ...form, ratioTo: e.target.value })} required />
+              </label>
+
+              <label>
+                Fator aplicado
+                <input value={calculatedFactor ? calculatedFactor.toFixed(6).replace(/\.0+$/, "").replace(/(\.\d*?)0+$/, "$1") : "-"} readOnly />
+              </label>
+            </>
+          ) : (
+            <label>
+              Fator
+              <input
+                type="number"
+                min="0.000001"
+                step="0.000001"
+                value={form.manualFactor}
+                onChange={(e) => onChange({ ...form, manualFactor: e.target.value })}
+                required
+              />
+            </label>
+          )}
 
           <label>
             Data efetiva
@@ -99,6 +155,21 @@ export function CorporateEventsSection({
             <input value={form.notes} onChange={(e) => onChange({ ...form, notes: e.target.value })} />
           </label>
         </div>
+
+        {usesRatio && (
+          <>
+            <p className="status">
+              {form.type === "Split"
+                ? "Desdobramento: use no formato 1 para N (ex.: 1 para 8)."
+                : "Grupamento: use no formato N para 1 (ex.: 8 para 1)."}
+            </p>
+            {preview && (
+              <p className="status">
+                Prévia (exemplo): Quantidade 100 -&gt; {preview.quantityAfter.toFixed(2)} | Preço médio R$ 10,00 -&gt; R$ {preview.unitPriceAfter.toFixed(2)}
+              </p>
+            )}
+          </>
+        )}
 
         <div className="row-actions">
           <button type="submit" disabled={loading}>
