@@ -81,13 +81,8 @@ type CorporateEventForm = {
   ratioFrom: string;
   ratioTo: string;
   manualFactor: string;
+  cashPerSourceUnit: string;
   effectiveDate: string;
-  notes: string;
-};
-
-type AssetCatalogForm = {
-  symbol: string;
-  type: AssetTypePayload;
   notes: string;
 };
 
@@ -98,10 +93,17 @@ const defaultCorporateEventForm: CorporateEventForm = {
   ratioFrom: "1",
   ratioTo: "1",
   manualFactor: "1",
+  cashPerSourceUnit: "",
   effectiveDate: new Date().toISOString().slice(0, 10),
   notes: ""
 };
 
+
+type AssetCatalogForm = {
+  symbol: string;
+  type: AssetTypePayload;
+  notes: string;
+};
 const defaultAssetCatalogForm: AssetCatalogForm = {
   symbol: "GOLD11",
   type: "Etf",
@@ -539,7 +541,9 @@ export default function DashboardPage() {
     setStatus(editingCorporateEventId ? "Atualizando evento corporativo..." : "Aplicando evento corporativo...");
 
     const factor =
-      corporateEventForm.type === "Split" || corporateEventForm.type === "ReverseSplit"
+      corporateEventForm.type === "Split" ||
+      corporateEventForm.type === "ReverseSplit" ||
+      corporateEventForm.type === "IncorporationWithCash"
         ? Number(corporateEventForm.ratioTo) / Number(corporateEventForm.ratioFrom)
         : Number(corporateEventForm.manualFactor);
 
@@ -549,11 +553,23 @@ export default function DashboardPage() {
       return;
     }
 
+    const cashPerSourceUnitValue =
+      corporateEventForm.type === "IncorporationWithCash" && corporateEventForm.cashPerSourceUnit.trim().length > 0
+        ? Number(corporateEventForm.cashPerSourceUnit)
+        : null;
+
+    if (cashPerSourceUnitValue !== null && (!Number.isFinite(cashPerSourceUnitValue) || cashPerSourceUnitValue < 0)) {
+      setCorporateEventLoading(false);
+      setStatus("Informe um valor de caixa por ativo valido.");
+      return;
+    }
+
     const payload: RegisterCorporateEventPayload = {
       type: corporateEventForm.type,
       sourceAssetSymbol: corporateEventForm.sourceAssetSymbol,
       targetAssetSymbol: corporateEventForm.targetAssetSymbol || null,
       factor,
+      cashPerSourceUnit: cashPerSourceUnitValue,
       effectiveAtUtc: new Date(`${corporateEventForm.effectiveDate}T00:00:00Z`).toISOString(),
       notes: corporateEventForm.notes || null
     };
@@ -594,7 +610,7 @@ export default function DashboardPage() {
 
   function onEditCorporateEvent(corporateEvent: CorporateEventPayload) {
     const ratioFrom = corporateEvent.type === "ReverseSplit" ? String(corporateEvent.factor) : "1";
-    const ratioTo = corporateEvent.type === "Split" ? String(corporateEvent.factor) : "1";
+    const ratioTo = corporateEvent.type === "Split" || corporateEvent.type === "IncorporationWithCash" ? String(corporateEvent.factor) : "1";
 
     setEditingCorporateEventId(corporateEvent.id);
     setCorporateEventForm({
@@ -604,6 +620,7 @@ export default function DashboardPage() {
       ratioFrom,
       ratioTo,
       manualFactor: String(corporateEvent.factor),
+      cashPerSourceUnit: corporateEvent.cashPerSourceUnit === null || corporateEvent.cashPerSourceUnit === undefined ? "" : String(corporateEvent.cashPerSourceUnit),
       effectiveDate: corporateEvent.effectiveAtUtc.slice(0, 10),
       notes: corporateEvent.notes ?? ""
     });
@@ -1247,6 +1264,12 @@ export default function DashboardPage() {
     </main>
   );
 }
+
+
+
+
+
+
 
 
 

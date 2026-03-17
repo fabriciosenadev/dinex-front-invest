@@ -11,6 +11,7 @@ type CorporateEventForm = {
   ratioFrom: string;
   ratioTo: string;
   manualFactor: string;
+  cashPerSourceUnit: string;
   effectiveDate: string;
   notes: string;
 };
@@ -37,7 +38,8 @@ type CorporateEventsSectionProps = {
 const eventTypeOptions: Array<{ value: CorporateEventType; label: string }> = [
   { value: "TickerChange", label: "Troca de ticker" },
   { value: "Split", label: "Desdobramento" },
-  { value: "ReverseSplit", label: "Grupamento" }
+  { value: "ReverseSplit", label: "Grupamento" },
+  { value: "IncorporationWithCash", label: "Incorporacao com caixa" }
 ];
 
 export function CorporateEventsSection({
@@ -53,11 +55,13 @@ export function CorporateEventsSection({
   onCancelEdit,
   pagination
 }: CorporateEventsSectionProps) {
-  const requiresTarget = form.type === "TickerChange";
-  const usesRatio = form.type === "Split" || form.type === "ReverseSplit";
+  const requiresTarget = form.type === "TickerChange" || form.type === "IncorporationWithCash";
+  const usesRatio = form.type === "Split" || form.type === "ReverseSplit" || form.type === "IncorporationWithCash";
+  const showsCash = form.type === "IncorporationWithCash";
   const ratioFromNumber = Number(form.ratioFrom);
   const ratioToNumber = Number(form.ratioTo);
   const calculatedFactor = usesRatio && ratioFromNumber > 0 && ratioToNumber > 0 ? ratioToNumber / ratioFromNumber : null;
+
   const preview = useMemo(() => {
     if (!usesRatio || !calculatedFactor || calculatedFactor <= 0) {
       return null;
@@ -85,9 +89,17 @@ export function CorporateEventsSection({
                 onChange({
                   ...form,
                   type: nextType,
-                  ratioFrom: nextType === "Split" || nextType === "ReverseSplit" ? "1" : form.ratioFrom,
-                  ratioTo: nextType === "Split" ? "2" : nextType === "ReverseSplit" ? "1" : form.ratioTo,
-                  manualFactor: nextType === "TickerChange" ? form.manualFactor : "1"
+                  ratioFrom: nextType === "Split" || nextType === "ReverseSplit" || nextType === "IncorporationWithCash" ? "1" : form.ratioFrom,
+                  ratioTo:
+                    nextType === "Split"
+                      ? "2"
+                      : nextType === "ReverseSplit"
+                        ? "1"
+                        : nextType === "IncorporationWithCash"
+                          ? "1"
+                          : form.ratioTo,
+                  manualFactor: nextType === "TickerChange" ? form.manualFactor : "1",
+                  cashPerSourceUnit: nextType === "IncorporationWithCash" ? form.cashPerSourceUnit : ""
                 });
               }}
             >
@@ -110,7 +122,7 @@ export function CorporateEventsSection({
               value={form.targetAssetSymbol}
               onChange={(e) => onChange({ ...form, targetAssetSymbol: e.target.value.toUpperCase() })}
               required={requiresTarget}
-              placeholder={requiresTarget ? "Obrigatorio para troca de ticker" : "Opcional"}
+              placeholder={requiresTarget ? "Obrigatorio para este evento" : "Opcional"}
             />
           </label>
 
@@ -145,6 +157,20 @@ export function CorporateEventsSection({
             </label>
           )}
 
+          {showsCash && (
+            <label>
+              Caixa por ativo origem
+              <input
+                type="number"
+                min="0"
+                step="0.000001"
+                value={form.cashPerSourceUnit}
+                onChange={(e) => onChange({ ...form, cashPerSourceUnit: e.target.value })}
+                placeholder="Opcional"
+              />
+            </label>
+          )}
+
           <label>
             Data efetiva
             <input type="date" value={form.effectiveDate} onChange={(e) => onChange({ ...form, effectiveDate: e.target.value })} required />
@@ -161,12 +187,17 @@ export function CorporateEventsSection({
             <p className="status">
               {form.type === "Split"
                 ? "Desdobramento: use no formato 1 para N (ex.: 1 para 8)."
-                : "Grupamento: use no formato N para 1 (ex.: 8 para 1)."}
+                : form.type === "ReverseSplit"
+                  ? "Grupamento: use no formato N para 1 (ex.: 8 para 1)."
+                  : "Incorporacao: use a proporcao de conversao (ex.: 1 para 0,98)."}
             </p>
             {preview && (
               <p className="status">
                 Prévia (exemplo): Quantidade 100 -&gt; {preview.quantityAfter.toFixed(2)} | Preço médio R$ 10,00 -&gt; R$ {preview.unitPriceAfter.toFixed(2)}
               </p>
+            )}
+            {showsCash && (
+              <p className="status">Se houver parcela em dinheiro, informe "Caixa por ativo origem". Esse valor fica registrado no evento para conferência.</p>
             )}
           </>
         )}
@@ -195,6 +226,7 @@ export function CorporateEventsSection({
               <th>Origem</th>
               <th>Destino</th>
               <th>Fator</th>
+              <th>Caixa/ativo</th>
               <th>Obs</th>
               <th>Acoes</th>
             </tr>
@@ -207,6 +239,7 @@ export function CorporateEventsSection({
                 <td>{entry.sourceAssetSymbol}</td>
                 <td>{entry.targetAssetSymbol ?? "-"}</td>
                 <td>{entry.factor}</td>
+                <td>{entry.cashPerSourceUnit ?? "-"}</td>
                 <td>{entry.notes ?? "-"}</td>
                 <td>
                   <div className="inline-actions">
@@ -222,7 +255,7 @@ export function CorporateEventsSection({
             ))}
             {events.length === 0 && (
               <tr>
-                <td colSpan={7}>Sem eventos cadastrados.</td>
+                <td colSpan={8}>Sem eventos cadastrados.</td>
               </tr>
             )}
           </tbody>

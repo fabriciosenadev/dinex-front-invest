@@ -133,13 +133,14 @@ export type ImportInvestmentsSpreadsheetPayload = {
   warnings: string[];
 };
 
-export type CorporateEventType = "TickerChange" | "Split" | "ReverseSplit";
+export type CorporateEventType = "TickerChange" | "Split" | "ReverseSplit" | "IncorporationWithCash";
 
 export type RegisterCorporateEventPayload = {
   type: CorporateEventType;
   sourceAssetSymbol: string;
   targetAssetSymbol?: string | null;
   factor: number;
+  cashPerSourceUnit?: number | null;
   effectiveAtUtc: string;
   notes?: string | null;
 };
@@ -155,6 +156,7 @@ export type CorporateEventPayload = {
   sourceAssetSymbol: string;
   targetAssetSymbol?: string | null;
   factor: number;
+  cashPerSourceUnit?: number | null;
   effectiveAtUtc: string;
   notes?: string | null;
   appliedAtUtc: string;
@@ -176,3 +178,6 @@ export type UpsertAssetDefinitionPayload = {
   type: AssetTypePayload;
   notes?: string | null;
 };
+
+
+
