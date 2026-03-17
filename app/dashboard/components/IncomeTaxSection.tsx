@@ -14,6 +14,7 @@ type IncomeTaxSectionProps = {
 export function IncomeTaxSection({ summary, assetDefinitions, statementEntries, onRefresh }: IncomeTaxSectionProps) {
   const [selectedYear, setSelectedYear] = useState<number | null>(null);
   const [assetTab, setAssetTab] = useState<"acao" | "fii" | "etf">("acao");
+  const [selectedMonth, setSelectedMonth] = useState<number | null>(null);
 
   useEffect(() => {
     if (summary.length === 0) {
@@ -33,6 +34,23 @@ export function IncomeTaxSection({ summary, assetDefinitions, statementEntries, 
 
     return summary.find((item) => item.year === selectedYear) ?? null;
   }, [summary, selectedYear]);
+
+  useEffect(() => {
+    if (!currentYearSummary) {
+      setSelectedMonth(null);
+      return;
+    }
+
+    const uniqueMonths = (currentYearSummary.monthlyTaxation ?? []).map((row) => row.month).sort((a, b) => a - b);
+    if (uniqueMonths.length === 0) {
+      setSelectedMonth(null);
+      return;
+    }
+
+    if (selectedMonth === null || !uniqueMonths.includes(selectedMonth)) {
+      setSelectedMonth(uniqueMonths[0]);
+    }
+  }, [currentYearSummary, selectedMonth]);
 
   const availableTabs = useMemo(() => {
     if (!currentYearSummary) {
@@ -177,6 +195,73 @@ export function IncomeTaxSection({ summary, assetDefinitions, statementEntries, 
   const receivedIncomeTotalWithoutJcp = Array.from(incomeByAsset.values()).reduce((accumulator, row) => accumulator + row.totalWithoutJcp, 0);
   const receivedJcpTotal = Array.from(incomeByAsset.values()).reduce((accumulator, row) => accumulator + row.jcp, 0);
   const receivedIncomeEntriesCount = Array.from(incomeByAsset.values()).reduce((accumulator, row) => accumulator + row.entriesCount, 0);
+
+  const monthlyTaxation = useMemo(() => currentYearSummary?.monthlyTaxation ?? [], [currentYearSummary]);
+  const availableMonths = useMemo(() => monthlyTaxation.map((item) => item.month).sort((a, b) => a - b), [monthlyTaxation]);
+  const monthlyForSelection = useMemo(
+    () => (selectedMonth === null ? null : monthlyTaxation.find((item) => item.month === selectedMonth)) ?? null,
+    [monthlyTaxation, selectedMonth]
+  );
+  const monthlySummaryRows = useMemo(() => {
+    if (!monthlyForSelection) {
+      return [] as Array<{
+        assetClass: "acao" | "fii" | "etf" | "outro";
+        modality: "common" | "daytrade";
+        monthlyResult: number;
+        compensatedLoss: number;
+        taxBase: number;
+        aliquot: number;
+        taxDue: number;
+        irrfCollected: number;
+        irrfCompensated: number;
+        darf: number;
+        carriedLoss: number;
+      }>;
+    }
+
+    const carryByBucket = new Map<string, number>();
+    for (const carry of monthlyForSelection.endingLossCarryByBucket) {
+      carryByBucket.set(`${carry.assetClass}|${carry.tradeMode}`, carry.lossCarry);
+    }
+
+    const accumulator = new Map<string, { assetClass: string; modality: string; monthlyResult: number; compensatedLoss: number; taxBase: number; aliquot: number; taxDue: number; irrfCollected: number; irrfCompensated: number; darf: number; carriedLoss: number }>();
+    monthlyForSelection.buckets.forEach((bucket) => {
+      const key = `${bucket.assetClass}|${bucket.tradeMode}`;
+      const current = accumulator.get(key) ?? {
+        assetClass: bucket.assetClass,
+        modality: bucket.tradeMode,
+        monthlyResult: 0,
+        compensatedLoss: 0,
+        taxBase: 0,
+        aliquot: 0,
+        taxDue: 0,
+        irrfCollected: 0,
+        irrfCompensated: 0,
+        darf: 0,
+        carriedLoss: carryByBucket.get(key) ?? 0
+      };
+
+      current.monthlyResult += bucket.grossResult;
+      current.compensatedLoss += bucket.lossCompensated;
+      current.taxBase += bucket.taxableBase;
+      current.aliquot = bucket.taxRate * 100;
+      current.taxDue += bucket.taxDue;
+      current.irrfCollected += bucket.irrfMonth;
+      current.irrfCompensated += bucket.irrfCompensated;
+      current.darf += bucket.darfGenerated;
+      current.carriedLoss = carryByBucket.get(key) ?? current.carriedLoss;
+      accumulator.set(key, current);
+    });
+
+    return Array.from(accumulator.values()).sort((left, right) => {
+      const byClass = left.assetClass.localeCompare(right.assetClass, "pt-BR");
+      if (byClass !== 0) {
+        return byClass;
+      }
+      return left.modality.localeCompare(right.modality, "pt-BR");
+    });
+  }, [monthlyForSelection]);
+  const selectedMonthLabel = selectedMonth === null ? null : formatMonthLabel(selectedMonth);
   const transferredEntries = useMemo(() => {
     if (selectedYear === null) {
       return [];
@@ -219,6 +304,51 @@ export function IncomeTaxSection({ summary, assetDefinitions, statementEntries, 
       netResult
     };
   }, [currentYearSummary, assetDefinitions, assetTab]);
+
+  const compensationByYear = useMemo(() => {
+    return summary
+      .slice()
+      .sort((left, right) => left.year - right.year)
+      .map((item) => {
+        const lastMonth = (item.monthlyTaxation ?? []).slice().sort((left, right) => right.month - left.month)[0];
+        const carriedLoss = (lastMonth?.endingLossCarryByBucket ?? []).reduce((accumulator, row) => accumulator + row.lossCarry, 0);
+
+        return {
+          year: item.year,
+          totalProfit: item.realized.totalProfit,
+          totalLoss: item.realized.totalLoss,
+          netResult: item.realized.netResult,
+          carriedLoss
+        };
+      });
+  }, [summary]);
+
+  const compensationOverall = useMemo(() => {
+    const totalProfit = compensationByYear.reduce((accumulator, year) => accumulator + year.totalProfit, 0);
+    const totalLoss = compensationByYear.reduce((accumulator, year) => accumulator + year.totalLoss, 0);
+    const netResult = compensationByYear.reduce((accumulator, year) => accumulator + year.netResult, 0);
+
+    const allMonths = summary
+      .flatMap((item) => (item.monthlyTaxation ?? []).map((month) => ({ year: item.year, month })))
+      .sort((left, right) => {
+        const byYear = left.year - right.year;
+        if (byYear !== 0) {
+          return byYear;
+        }
+
+        return left.month.month - right.month.month;
+      });
+
+    const lastMonth = allMonths[allMonths.length - 1]?.month;
+    const carriedLoss = (lastMonth?.endingLossCarryByBucket ?? []).reduce((accumulator, row) => accumulator + row.lossCarry, 0);
+
+    return {
+      totalProfit,
+      totalLoss,
+      netResult,
+      carriedLoss
+    };
+  }, [compensationByYear, summary]);
 
   return (
     <section className="card">
@@ -444,6 +574,134 @@ export function IncomeTaxSection({ summary, assetDefinitions, statementEntries, 
               </tbody>
             </table>
           </div>
+          {compensationByYear.length > 0 && (
+            <section className="income-tax-compensation">
+              <h3>Saldo de Compensação</h3>
+              <p className="status">
+                Visão consolidada para identificar lucro/prejuízo realizado e prejuízo acumulado disponível para compensação.
+              </p>
+              <div className="income-tax-compensation-cards">
+                <div className="status">
+                  <strong>Geral | Lucro: {formatMoney(compensationOverall.totalProfit, "BRL")}</strong>
+                </div>
+                <div className="status">
+                  <strong>Geral | Prejuízo: {formatMoney(compensationOverall.totalLoss, "BRL")}</strong>
+                </div>
+                <div className="status">
+                  <strong>Geral | Líquido: {formatMoney(compensationOverall.netResult, "BRL")}</strong>
+                </div>
+                <div className="status">
+                  <strong>Prejuízo acumulado disponível: {formatMoney(compensationOverall.carriedLoss, "BRL")}</strong>
+                </div>
+              </div>
+              <div className="table-scroll">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Ano</th>
+                      <th>Lucro realizado</th>
+                      <th>Prejuízo realizado</th>
+                      <th>Líquido realizado</th>
+                      <th>Prejuízo acumulado ao fim do ano</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {compensationByYear.map((row) => (
+                      <tr key={row.year}>
+                        <td>{row.year}</td>
+                        <td>{formatMoney(row.totalProfit, "BRL")}</td>
+                        <td>{formatMoney(row.totalLoss, "BRL")}</td>
+                        <td>{formatMoney(row.netResult, "BRL")}</td>
+                        <td>{formatMoney(row.carriedLoss, "BRL")}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </section>
+          )}
+          {selectedMonthLabel && monthlySummaryRows.length > 0 && (
+            <section className="monthly-section">
+              <div className="monthly-header">
+                <div>
+                  <strong>Apuração Mensal</strong>
+                  <p>{selectedMonthLabel}</p>
+                </div>
+                <div className="monthly-filters">
+                  {availableMonths.length > 0 && (
+                    <label>
+                      Mês
+                      <select value={selectedMonth ?? ""} onChange={(event) => setSelectedMonth(Number(event.target.value))}>
+                        {availableMonths.map((month) => (
+                          <option key={month} value={month}>
+                            {formatMonthLabel(month)}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                  )}
+                </div>
+              </div>
+              <div className="monthly-summary-grid">
+                <div>
+                  <span>Imposto total</span>
+                  <strong>{formatMoney(monthlyForSelection?.totalTax ?? 0, "BRL")}</strong>
+                </div>
+                <div>
+                  <span>IRRF no mês</span>
+                  <strong>{formatMoney(monthlyForSelection?.totalIrrfMonth ?? 0, "BRL")}</strong>
+                </div>
+                <div>
+                  <span>IRRF compensado</span>
+                  <strong>{formatMoney(monthlyForSelection?.totalIrrfCompensated ?? 0, "BRL")}</strong>
+                </div>
+                <div>
+                  <span>DARF do mês</span>
+                  <strong>{formatMoney(monthlyForSelection?.darfDue ?? 0, "BRL")}</strong>
+                </div>
+                <div>
+                  <span>Prejuízo acumulado</span>
+                  <strong>{formatMoney(monthlySummaryRows.reduce((accumulator, row) => accumulator + row.carriedLoss, 0), "BRL")}</strong>
+                </div>
+              </div>
+              <div className="table-scroll">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Classe</th>
+                      <th>Modalidade</th>
+                      <th>Resultado</th>
+                      <th>Prejuízo Comp.</th>
+                      <th>Base</th>
+                      <th>Alíquota</th>
+                      <th>Imposto devido</th>
+                      <th>IRRF acumulado</th>
+                      <th>IRRF compensado</th>
+                      <th>DARF</th>
+                      <th>Prejuízo remanescente</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {monthlySummaryRows.map((row) => (
+                      <tr key={`${row.assetClass}-${row.modality}`}>
+                        <td>{row.assetClass}</td>
+                        <td>{row.modality === "daytrade" ? "day trade" : "comum"}</td>
+                        <td>{formatMoney(row.monthlyResult, "BRL")}</td>
+                        <td>{formatMoney(row.compensatedLoss, "BRL")}</td>
+                        <td>{formatMoney(row.taxBase, "BRL")}</td>
+                        <td>{row.aliquot.toFixed(2)}%</td>
+                        <td>{formatMoney(row.taxDue, "BRL")}</td>
+                        <td>{formatMoney(row.irrfCollected, "BRL")}</td>
+                        <td>{formatMoney(row.irrfCompensated, "BRL")}</td>
+                        <td>{formatMoney(row.darf, "BRL")}</td>
+                        <td>{formatMoney(row.carriedLoss, "BRL")}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </section>
+          )}
         </>
       )}
 
@@ -538,6 +796,14 @@ function normalizeIncomeEventType(value: string): "dividend" | "jcp" | "rendimen
   }
 
   return "rendimento";
+}
+
+function formatMonthLabel(month: number) {
+  try {
+    return new Intl.DateTimeFormat("pt-BR", { month: "long" }).format(new Date(2020, month - 1, 1));
+  } catch {
+    return `${month}`;
+  }
 }
 
 

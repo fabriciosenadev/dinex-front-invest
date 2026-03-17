@@ -54,10 +54,41 @@ export type IncomeTaxRealizedSummaryPayload = {
   assets: IncomeTaxRealizedAssetSummaryPayload[];
 };
 
+export type IncomeTaxMonthlyBucketPayload = {
+  assetClass: "acao" | "fii" | "etf" | "outro";
+  tradeMode: "common" | "daytrade";
+  grossResult: number;
+  lossCompensated: number;
+  taxableBase: number;
+  taxRate: number;
+  taxDue: number;
+  irrfMonth: number;
+  irrfCompensated: number;
+  darfGenerated: number;
+};
+
+export type IncomeTaxMonthlyCarryPayload = {
+  assetClass: "acao" | "fii" | "etf" | "outro";
+  tradeMode: "common" | "daytrade";
+  lossCarry: number;
+};
+
+export type IncomeTaxMonthlySummaryPayload = {
+  year: number;
+  month: number;
+  totalTax: number;
+  totalIrrfMonth: number;
+  totalIrrfCompensated: number;
+  darfDue: number;
+  buckets: IncomeTaxMonthlyBucketPayload[];
+  endingLossCarryByBucket: IncomeTaxMonthlyCarryPayload[];
+};
+
 export type IncomeTaxYearSummaryPayload = {
   year: number;
   companies: IncomeTaxCompanySummaryPayload[];
   realized: IncomeTaxRealizedSummaryPayload;
+  monthlyTaxation?: IncomeTaxMonthlySummaryPayload[];
 };
 
 export type ErrorResponse = {

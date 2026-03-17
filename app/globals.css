@@ -57,6 +57,15 @@
   --badge-outro-text: #4b5565;
   --badge-outro-border: #dde3ec;
   --muted-surface: #f7faff;
+  --monthly-bg: linear-gradient(160deg, #f5f8ff, #e8eefb);
+  --monthly-border: #cfdaf0;
+  --monthly-shadow: 0 10px 24px rgba(16, 30, 60, 0.12);
+  --monthly-subtext: #4f6289;
+  --monthly-th-text: #1f4a95;
+  --monthly-row-border: #d9e3f5;
+  --monthly-select-bg: #ffffff;
+  --monthly-select-text: #152445;
+  --monthly-select-border: #b9c9ea;
 }
 
 :root[data-theme="dark"] {
@@ -114,6 +123,15 @@
   --badge-outro-text: #d2dae7;
   --badge-outro-border: #475164;
   --muted-surface: #1a2a44;
+  --monthly-bg: linear-gradient(145deg, rgba(23, 33, 63, 0.65), rgba(16, 24, 44, 0.95));
+  --monthly-border: #3a4c73;
+  --monthly-shadow: 0 12px 30px rgba(5, 10, 25, 0.6);
+  --monthly-subtext: #b7c5df;
+  --monthly-th-text: #9fc1ff;
+  --monthly-row-border: rgba(255, 255, 255, 0.08);
+  --monthly-select-bg: #13213a;
+  --monthly-select-text: #edf3ff;
+  --monthly-select-border: #3d547e;
 }
 
 * {
@@ -369,6 +387,11 @@ select {
   color: var(--input-text);
 }
 
+select option {
+  background: var(--input-bg);
+  color: var(--input-text);
+}
+
 button {
   background: var(--button-bg);
   color: var(--button-text);
@@ -493,6 +516,115 @@ td {
 
 .income-tax-year-filter {
   margin-top: 10px;
+}
+
+.income-tax-compensation {
+  margin-top: 18px;
+  display: grid;
+  gap: 10px;
+}
+
+.income-tax-compensation h3 {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.income-tax-compensation-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 8px;
+}
+
+.income-tax-compensation-cards .status {
+  margin: 0;
+}
+
+.monthly-section {
+  margin-top: 24px;
+  padding: 20px;
+  border-radius: 16px;
+  border: 1px solid var(--monthly-border);
+  background: var(--monthly-bg);
+  box-shadow: var(--monthly-shadow);
+}
+
+.monthly-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.monthly-header p {
+  margin: 4px 0 0;
+  color: var(--monthly-subtext);
+}
+
+.monthly-filters {
+  display: flex;
+  gap: 12px;
+}
+
+.monthly-filters label {
+  font-size: 0.85rem;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.monthly-filters select {
+  border-radius: 999px;
+  padding: 6px 16px;
+  border: 1px solid var(--monthly-select-border);
+  background: var(--monthly-select-bg);
+  color: var(--monthly-select-text);
+}
+
+.monthly-filters select option {
+  background: var(--monthly-select-bg);
+  color: var(--monthly-select-text);
+}
+
+.monthly-summary-grid {
+  margin: 16px 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  gap: 12px;
+}
+
+.monthly-summary-grid span {
+  display: block;
+  font-size: 0.75rem;
+  color: var(--monthly-subtext);
+}
+
+.monthly-summary-grid strong {
+  display: block;
+  font-size: 1rem;
+  margin-top: 4px;
+}
+
+.monthly-section table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 12px;
+}
+
+.monthly-section table th,
+.monthly-section table td {
+  font-size: 0.8rem;
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--monthly-row-border);
+}
+
+.monthly-section table th {
+  text-align: left;
+  color: var(--monthly-th-text);
+}
+
+.monthly-section table tbody tr:last-child td {
+  border-bottom: none;
 }
 
 .reset-panel {
