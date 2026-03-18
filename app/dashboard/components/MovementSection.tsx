@@ -28,7 +28,12 @@ export function MovementSection({ form, loading, status, onChange, onSubmit, onR
         <div className="grid">
           <label>
             Ativo
-            <input value={form.assetSymbol} onChange={(e) => onChange({ ...form, assetSymbol: e.target.value.toUpperCase() })} required />
+            <input
+              value={form.assetSymbol}
+              onChange={(e) => onChange({ ...form, assetSymbol: e.target.value.toUpperCase() })}
+              placeholder="Ex.: PETR4"
+              required
+            />
           </label>
 
           <label>
@@ -41,17 +46,39 @@ export function MovementSection({ form, loading, status, onChange, onSubmit, onR
 
           <label>
             Quantidade
-            <input type="number" min="0.0001" step="0.0001" value={form.quantity} onChange={(e) => onChange({ ...form, quantity: e.target.value })} required />
+            <input
+              type="number"
+              min="0.0001"
+              step="0.0001"
+              value={form.quantity}
+              onChange={(e) => onChange({ ...form, quantity: e.target.value })}
+              placeholder="Ex.: 100"
+              required
+            />
           </label>
 
           <label>
             Preco Unitario
-            <input type="number" min="0.0001" step="0.0001" value={form.unitPrice} onChange={(e) => onChange({ ...form, unitPrice: e.target.value })} required />
+            <input
+              type="number"
+              min="0.0001"
+              step="0.0001"
+              value={form.unitPrice}
+              onChange={(e) => onChange({ ...form, unitPrice: e.target.value })}
+              placeholder="Ex.: 32.50"
+              required
+            />
           </label>
 
           <label>
             Moeda
-            <input maxLength={3} value={form.currency} onChange={(e) => onChange({ ...form, currency: e.target.value.toUpperCase() })} required />
+            <input
+              maxLength={3}
+              value={form.currency}
+              onChange={(e) => onChange({ ...form, currency: e.target.value.toUpperCase() })}
+              placeholder="Ex.: BRL"
+              required
+            />
           </label>
 
           <label>

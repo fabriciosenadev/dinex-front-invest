@@ -199,6 +199,17 @@ export type AssetDefinitionPayload = {
   id: string;
   symbol: string;
   type: AssetTypePayload;
+  name?: string | null;
+  document?: string | null;
+  country?: string | null;
+  currency?: string | null;
+  sector?: string | null;
+  segment?: string | null;
+  shareClass?: string | null;
+  cvmCode?: string | null;
+  fiiCategory?: string | null;
+  administrator?: string | null;
+  manager?: string | null;
   notes?: string | null;
   createdAtUtc: string;
   updatedAtUtc?: string | null;
@@ -207,8 +218,20 @@ export type AssetDefinitionPayload = {
 export type UpsertAssetDefinitionPayload = {
   symbol: string;
   type: AssetTypePayload;
+  name?: string | null;
+  document?: string | null;
+  country?: string | null;
+  currency?: string | null;
+  sector?: string | null;
+  segment?: string | null;
+  shareClass?: string | null;
+  cvmCode?: string | null;
+  fiiCategory?: string | null;
+  administrator?: string | null;
+  manager?: string | null;
   notes?: string | null;
 };
+
 
 
 

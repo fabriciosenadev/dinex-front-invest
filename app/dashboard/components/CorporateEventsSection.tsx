@@ -84,24 +84,17 @@ export function CorporateEventsSection({
             Tipo
             <select
               value={form.type}
-              onChange={(e) => {
-                const nextType = e.target.value as CorporateEventType;
-                onChange({
-                  ...form,
-                  type: nextType,
-                  ratioFrom: nextType === "Split" || nextType === "ReverseSplit" || nextType === "IncorporationWithCash" ? "1" : form.ratioFrom,
-                  ratioTo:
-                    nextType === "Split"
-                      ? "2"
-                      : nextType === "ReverseSplit"
-                        ? "1"
-                        : nextType === "IncorporationWithCash"
-                          ? "1"
-                          : form.ratioTo,
-                  manualFactor: nextType === "TickerChange" ? form.manualFactor : "1",
-                  cashPerSourceUnit: nextType === "IncorporationWithCash" ? form.cashPerSourceUnit : ""
-                });
-              }}
+                onChange={(e) => {
+                  const nextType = e.target.value as CorporateEventType;
+                  onChange({
+                    ...form,
+                    type: nextType,
+                    ratioFrom: nextType === "Split" || nextType === "ReverseSplit" || nextType === "IncorporationWithCash" ? "" : form.ratioFrom,
+                    ratioTo: nextType === "Split" || nextType === "ReverseSplit" || nextType === "IncorporationWithCash" ? "" : form.ratioTo,
+                    manualFactor: nextType === "TickerChange" ? form.manualFactor : "",
+                    cashPerSourceUnit: nextType === "IncorporationWithCash" ? form.cashPerSourceUnit : ""
+                  });
+                }}
             >
               {eventTypeOptions.map((option) => (
                 <option key={option.value} value={option.value}>
@@ -113,7 +106,12 @@ export function CorporateEventsSection({
 
           <label>
             Ativo origem
-            <input value={form.sourceAssetSymbol} onChange={(e) => onChange({ ...form, sourceAssetSymbol: e.target.value.toUpperCase() })} required />
+            <input
+              value={form.sourceAssetSymbol}
+              onChange={(e) => onChange({ ...form, sourceAssetSymbol: e.target.value.toUpperCase() })}
+              placeholder="Ex.: AESB3"
+              required
+            />
           </label>
 
           <label>
@@ -122,7 +120,7 @@ export function CorporateEventsSection({
               value={form.targetAssetSymbol}
               onChange={(e) => onChange({ ...form, targetAssetSymbol: e.target.value.toUpperCase() })}
               required={requiresTarget}
-              placeholder={requiresTarget ? "Obrigatorio para este evento" : "Opcional"}
+              placeholder={requiresTarget ? "Ex.: AURE3" : "Ex.: AURE3"}
             />
           </label>
 
@@ -130,12 +128,28 @@ export function CorporateEventsSection({
             <>
               <label>
                 Proporcao de
-                <input type="number" min="0.000001" step="0.000001" value={form.ratioFrom} onChange={(e) => onChange({ ...form, ratioFrom: e.target.value })} required />
+                <input
+                  type="number"
+                  min="0.000001"
+                  step="0.000001"
+                  value={form.ratioFrom}
+                  onChange={(e) => onChange({ ...form, ratioFrom: e.target.value })}
+                  placeholder="Ex.: 1"
+                  required
+                />
               </label>
 
               <label>
                 Proporcao para
-                <input type="number" min="0.000001" step="0.000001" value={form.ratioTo} onChange={(e) => onChange({ ...form, ratioTo: e.target.value })} required />
+                <input
+                  type="number"
+                  min="0.000001"
+                  step="0.000001"
+                  value={form.ratioTo}
+                  onChange={(e) => onChange({ ...form, ratioTo: e.target.value })}
+                  placeholder="Ex.: 8"
+                  required
+                />
               </label>
 
               <label>
@@ -152,6 +166,7 @@ export function CorporateEventsSection({
                 step="0.000001"
                 value={form.manualFactor}
                 onChange={(e) => onChange({ ...form, manualFactor: e.target.value })}
+                placeholder="Ex.: 1.000000"
                 required
               />
             </label>
@@ -166,7 +181,7 @@ export function CorporateEventsSection({
                 step="0.000001"
                 value={form.cashPerSourceUnit}
                 onChange={(e) => onChange({ ...form, cashPerSourceUnit: e.target.value })}
-                placeholder="Opcional"
+                placeholder="Ex.: 2.50"
               />
             </label>
           )}
@@ -178,7 +193,7 @@ export function CorporateEventsSection({
 
           <label>
             Observacoes
-            <input value={form.notes} onChange={(e) => onChange({ ...form, notes: e.target.value })} />
+            <input value={form.notes} onChange={(e) => onChange({ ...form, notes: e.target.value })} placeholder="Ex.: Optei por receber parte em caixa." />
           </label>
         </div>
 

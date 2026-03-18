@@ -7,6 +7,17 @@ import { PaginationControls } from "./PaginationControls";
 type AssetCatalogForm = {
   symbol: string;
   type: AssetTypePayload;
+  name: string;
+  document: string;
+  country: string;
+  currency: string;
+  sector: string;
+  segment: string;
+  shareClass: string;
+  cvmCode: string;
+  fiiCategory: string;
+  administrator: string;
+  manager: string;
   notes: string;
 };
 
@@ -51,6 +62,9 @@ export function AssetCatalogSection({
   onRefresh,
   pagination
 }: AssetCatalogSectionProps) {
+  const isStock = form.type === "Stock";
+  const isFii = form.type === "Fii";
+
   return (
     <section className="card">
       <h2>Cadastro de Ativos</h2>
@@ -60,7 +74,7 @@ export function AssetCatalogSection({
           <input
             value={form.symbol}
             onChange={(event) => onChange({ ...form, symbol: event.target.value.toUpperCase() })}
-            placeholder="GOLD11"
+            placeholder="Ex.: ITSA4"
             required
           />
         </label>
@@ -74,9 +88,73 @@ export function AssetCatalogSection({
             ))}
           </select>
         </label>
+
+        <label>
+          Nome do ativo (opcional)
+          <input value={form.name} onChange={(event) => onChange({ ...form, name: event.target.value })} placeholder="Ex.: Itausa S.A." />
+        </label>
+        <label>
+          Documento/CNPJ (opcional)
+          <input
+            value={form.document}
+            onChange={(event) => onChange({ ...form, document: event.target.value.toUpperCase() })}
+            placeholder="Ex.: 61.532.644/0001-15"
+          />
+        </label>
+        <label>
+          Pais (opcional)
+          <input value={form.country} onChange={(event) => onChange({ ...form, country: event.target.value })} placeholder="Brasil" />
+        </label>
+        <label>
+          Moeda (opcional)
+          <input
+            value={form.currency}
+            onChange={(event) => onChange({ ...form, currency: event.target.value.toUpperCase() })}
+            placeholder="BRL"
+          />
+        </label>
+        <label>
+          Setor (opcional)
+          <input value={form.sector} onChange={(event) => onChange({ ...form, sector: event.target.value })} placeholder="Ex.: Financeiro" />
+        </label>
+        <label>
+          Segmento (opcional)
+          <input value={form.segment} onChange={(event) => onChange({ ...form, segment: event.target.value })} placeholder="Ex.: Bancos" />
+        </label>
+
+        {isStock && (
+          <>
+            <label>
+              Classe da acao (opcional)
+              <input value={form.shareClass} onChange={(event) => onChange({ ...form, shareClass: event.target.value })} placeholder="ON, PN..." />
+            </label>
+            <label>
+              Codigo CVM (opcional)
+              <input value={form.cvmCode} onChange={(event) => onChange({ ...form, cvmCode: event.target.value })} placeholder="Ex.: 12345" />
+            </label>
+          </>
+        )}
+
+        {isFii && (
+          <>
+            <label>
+              Categoria FII (opcional)
+              <input value={form.fiiCategory} onChange={(event) => onChange({ ...form, fiiCategory: event.target.value })} placeholder="Papel, Tijolo..." />
+            </label>
+            <label>
+              Administrador (opcional)
+              <input value={form.administrator} onChange={(event) => onChange({ ...form, administrator: event.target.value })} placeholder="Ex.: BRL Trust" />
+            </label>
+            <label className="full-width">
+              Gestor (opcional)
+              <input value={form.manager} onChange={(event) => onChange({ ...form, manager: event.target.value })} placeholder="Ex.: BTG Pactual" />
+            </label>
+          </>
+        )}
+
         <label className="full-width">
           Observacoes (opcional)
-          <input value={form.notes} onChange={(event) => onChange({ ...form, notes: event.target.value })} placeholder="Opcional" />
+          <input value={form.notes} onChange={(event) => onChange({ ...form, notes: event.target.value })} placeholder="Ex.: Declarado em Bens e Direitos." />
         </label>
         <div className="full-width row-actions">
           <button type="submit" disabled={loading}>
@@ -99,7 +177,9 @@ export function AssetCatalogSection({
             <tr>
               <th>Codigo</th>
               <th>Tipo</th>
-              <th>Observacoes</th>
+              <th>Nome</th>
+              <th>Documento</th>
+              <th>Setor/Segmento</th>
               <th>Acoes</th>
             </tr>
           </thead>
@@ -108,7 +188,9 @@ export function AssetCatalogSection({
               <tr key={asset.id}>
                 <td>{asset.symbol}</td>
                 <td>{mapTypeLabel(asset.type)}</td>
-                <td>{asset.notes?.trim() ? asset.notes : "-"}</td>
+                <td>{asset.name?.trim() ? asset.name : "-"}</td>
+                <td>{asset.document?.trim() ? asset.document : "-"}</td>
+                <td>{renderSectorSegment(asset)}</td>
                 <td>
                   <div className="inline-actions">
                     <button type="button" className="button-small" onClick={() => onEdit(asset)} disabled={loading}>
@@ -123,7 +205,7 @@ export function AssetCatalogSection({
             ))}
             {assets.length === 0 && (
               <tr>
-                <td colSpan={4}>Nenhum ativo cadastrado ainda.</td>
+                <td colSpan={6}>Nenhum ativo cadastrado ainda.</td>
               </tr>
             )}
           </tbody>
@@ -148,4 +230,23 @@ function mapTypeLabel(value: AssetTypePayload): string {
   if (value === "Bdr") return "BDR";
   if (value === "FixedIncome") return "Renda fixa";
   return "Outro";
+}
+
+function renderSectorSegment(asset: AssetDefinitionPayload): string {
+  const sector = asset.sector?.trim();
+  const segment = asset.segment?.trim();
+
+  if (sector && segment) {
+    return `${sector} / ${segment}`;
+  }
+
+  if (sector) {
+    return sector;
+  }
+
+  if (segment) {
+    return segment;
+  }
+
+  return "-";
 }

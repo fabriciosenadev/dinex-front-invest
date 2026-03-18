@@ -101,7 +101,11 @@ export function StatementSection({ form, entries, entryTypeOptions, onChange, im
 
             <label>
               Ativo (opcional)
-              <input value={form.assetSymbol} onChange={(e) => onChange({ ...form, assetSymbol: e.target.value.toUpperCase() })} />
+              <input
+                value={form.assetSymbol}
+                onChange={(e) => onChange({ ...form, assetSymbol: e.target.value.toUpperCase() })}
+                placeholder="Ex.: ITSA4"
+              />
             </label>
 
             <label>
@@ -119,12 +123,19 @@ export function StatementSection({ form, entries, entryTypeOptions, onChange, im
                   })
                 }
                 required
+                placeholder="Ex.: 25.00"
               />
             </label>
 
             <label>
               Moeda
-              <input maxLength={3} value={form.currency} onChange={(e) => onChange({ ...form, currency: e.target.value.toUpperCase() })} required />
+              <input
+                maxLength={3}
+                value={form.currency}
+                onChange={(e) => onChange({ ...form, currency: e.target.value.toUpperCase() })}
+                placeholder="Ex.: BRL"
+                required
+              />
             </label>
           </div>
 
@@ -138,22 +149,48 @@ export function StatementSection({ form, entries, entryTypeOptions, onChange, im
             <div className="grid form-grid-two statement-advanced-fields">
               <label>
                 Descricao
-                <input value={form.description} onChange={(e) => onChange({ ...form, description: e.target.value })} placeholder="Opcional" />
+                <input
+                  value={form.description}
+                  onChange={(e) => onChange({ ...form, description: e.target.value })}
+                  placeholder="Ex.: Dividendo referente a 03/2026"
+                />
               </label>
 
               <label>
                 Quantidade (opcional)
-                <input type="number" min="0.0001" step="0.0001" value={form.quantity} onChange={(e) => onChange({ ...form, quantity: e.target.value })} />
+                <input
+                  type="number"
+                  min="0.0001"
+                  step="0.0001"
+                  value={form.quantity}
+                  onChange={(e) => onChange({ ...form, quantity: e.target.value })}
+                  placeholder="Ex.: 100"
+                />
               </label>
 
               <label>
                 Preco unitario (opcional)
-                <input type="number" min="0.0001" step="0.0001" value={form.unitPriceAmount} onChange={(e) => onChange({ ...form, unitPriceAmount: e.target.value })} />
+                <input
+                  type="number"
+                  min="0.0001"
+                  step="0.0001"
+                  value={form.unitPriceAmount}
+                  onChange={(e) => onChange({ ...form, unitPriceAmount: e.target.value })}
+                  placeholder="Ex.: 0.95"
+                />
               </label>
 
               <label>
                 Valor bruto
-                <input type="number" min="0" step="0.0001" value={form.grossAmount} onChange={(e) => onChange({ ...form, grossAmount: e.target.value })} required />
+                <input
+                  type="number"
+                  min="0"
+                  step="0.0001"
+                  value={form.grossAmount}
+                  onChange={(e) => onChange({ ...form, grossAmount: e.target.value })}
+                  placeholder="Ex.: 25.00"
+                  required
+                />
               </label>
             </div>
           )}

@@ -42,12 +42,12 @@ type MovementForm = {
 };
 
 const defaultForm: MovementForm = {
-  assetSymbol: "PETR4",
+  assetSymbol: "",
   type: "1",
-  quantity: "10",
-  unitPrice: "32.50",
-  currency: "BRL",
-  occurredAt: new Date().toISOString().slice(0, 10)
+  quantity: "",
+  unitPrice: "",
+  currency: "",
+  occurredAt: ""
 };
 
 type StatementForm = {
@@ -65,12 +65,12 @@ type StatementForm = {
 const defaultStatementForm: StatementForm = {
   type: "Income",
   description: "",
-  assetSymbol: "PETR4",
+  assetSymbol: "",
   quantity: "",
   unitPriceAmount: "",
-  grossAmount: "25.00",
-  netAmount: "25.00",
-  currency: "BRL",
+  grossAmount: "",
+  netAmount: "",
+  currency: "",
   source: "manual"
 };
 
@@ -88,13 +88,13 @@ type CorporateEventForm = {
 
 const defaultCorporateEventForm: CorporateEventForm = {
   type: "TickerChange",
-  sourceAssetSymbol: "PETR4",
+  sourceAssetSymbol: "",
   targetAssetSymbol: "",
-  ratioFrom: "1",
-  ratioTo: "1",
-  manualFactor: "1",
+  ratioFrom: "",
+  ratioTo: "",
+  manualFactor: "",
   cashPerSourceUnit: "",
-  effectiveDate: new Date().toISOString().slice(0, 10),
+  effectiveDate: "",
   notes: ""
 };
 
@@ -102,11 +102,34 @@ const defaultCorporateEventForm: CorporateEventForm = {
 type AssetCatalogForm = {
   symbol: string;
   type: AssetTypePayload;
+  name: string;
+  document: string;
+  country: string;
+  currency: string;
+  sector: string;
+  segment: string;
+  shareClass: string;
+  cvmCode: string;
+  fiiCategory: string;
+  administrator: string;
+  manager: string;
   notes: string;
 };
+
 const defaultAssetCatalogForm: AssetCatalogForm = {
-  symbol: "GOLD11",
+  symbol: "",
   type: "Etf",
+  name: "",
+  document: "",
+  country: "",
+  currency: "",
+  sector: "",
+  segment: "",
+  shareClass: "",
+  cvmCode: "",
+  fiiCategory: "",
+  administrator: "",
+  manager: "",
   notes: ""
 };
 
@@ -737,6 +760,17 @@ export default function DashboardPage() {
       const payload = {
         symbol: assetCatalogForm.symbol,
         type: assetCatalogForm.type,
+        name: assetCatalogForm.name || null,
+        document: assetCatalogForm.document || null,
+        country: assetCatalogForm.country || null,
+        currency: assetCatalogForm.currency || null,
+        sector: assetCatalogForm.sector || null,
+        segment: assetCatalogForm.segment || null,
+        shareClass: assetCatalogForm.type === "Stock" ? assetCatalogForm.shareClass || null : null,
+        cvmCode: assetCatalogForm.type === "Stock" ? assetCatalogForm.cvmCode || null : null,
+        fiiCategory: assetCatalogForm.type === "Fii" ? assetCatalogForm.fiiCategory || null : null,
+        administrator: assetCatalogForm.type === "Fii" ? assetCatalogForm.administrator || null : null,
+        manager: assetCatalogForm.type === "Fii" ? assetCatalogForm.manager || null : null,
         notes: assetCatalogForm.notes || null
       };
 
@@ -774,6 +808,17 @@ export default function DashboardPage() {
     setAssetCatalogForm({
       symbol: asset.symbol,
       type: asset.type,
+      name: asset.name ?? "",
+      document: asset.document ?? "",
+      country: asset.country ?? "Brasil",
+      currency: asset.currency ?? "BRL",
+      sector: asset.sector ?? "",
+      segment: asset.segment ?? "",
+      shareClass: asset.shareClass ?? "",
+      cvmCode: asset.cvmCode ?? "",
+      fiiCategory: asset.fiiCategory ?? "",
+      administrator: asset.administrator ?? "",
+      manager: asset.manager ?? "",
       notes: asset.notes ?? ""
     });
   }
@@ -1264,6 +1309,9 @@ export default function DashboardPage() {
     </main>
   );
 }
+
+
+
 
 
 
